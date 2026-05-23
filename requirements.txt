@@ -1,0 +1,5 @@
+fastapi>=0.100
+uvicorn>=0.20
+httpx>=0.25
+aiofiles>=23
+websockets>=12

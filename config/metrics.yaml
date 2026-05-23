@@ -1,0 +1,106 @@
+# ============================================================
+# DataBoard - 指标定义配置
+# 每项指标定义查询规则、展示样式和刷新间隔
+# ============================================================
+
+# 指标定义。每个指标有一个唯一 id，供 layout.yaml 引用。
+metrics:
+  # --- 树莓派系统指标 ---
+  - id: rpi_cpu_temp
+    name: "CPU 温度"
+    unit: "°C"
+    chart_type: line
+    color: "#ff6384"
+    refresh_interval: 5
+    # VictoriaMetrics PromQL 查询
+    query: 'avg(ha_sensor_value{entity_id=~".*cpu.*temp.*"})'
+    # 数据未被写入 VM 时的回退
+    mock:
+      min: 40
+      max: 75
+      drift: 0.3
+
+  - id: rpi_mem_usage
+    name: "内存使用"
+    unit: "%"
+    chart_type: area
+    color: "#36a2eb"
+    refresh_interval: 5
+    query: 'avg(ha_sensor_value{entity_id=~".*memory.*used.*"})'
+    mock:
+      min: 30
+      max: 85
+      drift: 0.5
+
+  - id: rpi_cpu_load
+    name: "CPU 负载"
+    unit: ""
+    chart_type: line
+    color: "#ffce56"
+    refresh_interval: 5
+    query: 'avg(ha_sensor_value{entity_id=~".*cpu.*load.*"})'
+    mock:
+      min: 0.2
+      max: 4.0
+      drift: 0.1
+
+  - id: rpi_disk_usage
+    name: "磁盘使用"
+    unit: "%"
+    chart_type: gauge
+    color: "#4bc0c0"
+    refresh_interval: 10
+    query: 'avg(ha_sensor_value{entity_id=~".*disk.*used.*"})'
+    mock:
+      min: 40
+      max: 90
+      drift: 0.2
+
+  # --- OpenWrt 预留指标（后续接入） ---
+  - id: owrt_cpu_load
+    name: "OpenWrt CPU"
+    unit: "%"
+    chart_type: line
+    color: "#9966ff"
+    refresh_interval: 5
+    query: ''
+    mock:
+      min: 10
+      max: 60
+      drift: 0.4
+
+  - id: owrt_mem_usage
+    name: "OpenWrt 内存"
+    unit: "%"
+    chart_type: area
+    color: "#ff9f40"
+    refresh_interval: 5
+    query: ''
+    mock:
+      min: 20
+      max: 70
+      drift: 0.3
+
+  - id: owrt_net_rx
+    name: "OpenWrt 网络接收"
+    unit: "Mbps"
+    chart_type: line
+    color: "#00e396"
+    refresh_interval: 5
+    query: ''
+    mock:
+      min: 0
+      max: 50
+      drift: 2.0
+
+  - id: owrt_net_tx
+    name: "OpenWrt 网络发送"
+    unit: "Mbps"
+    chart_type: line
+    color: "#feb019"
+    refresh_interval: 5
+    query: ''
+    mock:
+      min: 0
+      max: 20
+      drift: 1.0

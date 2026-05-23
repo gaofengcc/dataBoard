@@ -1,0 +1,62 @@
+# ============================================================
+# DataBoard - Dashboard 布局配置
+# 定义看板页面结构：每行有几列，每格放哪个指标
+# ============================================================
+
+# 页面标题
+title: "系统监控看板"
+
+# 全局刷新间隔（秒），各指标可单独覆盖
+refresh_interval: 5
+
+# 布局定义：行为单位
+# 每行包含若干个 panel，panel 可选属性：
+#   metric: metrics.yaml 中定义的指标 id
+#   title:  可选，覆盖默认标题
+#   width:  1, 2, 3, 4 (占几列，共 4 列)
+#   height: 1, 2 (占几行高，默认 1)
+layout:
+  # ---- 第 1 行：RPi 概览 ----
+  - row: "树莓派系统"
+    panels:
+      - metric: rpi_cpu_temp
+        width: 2
+        height: 1
+      - metric: rpi_mem_usage
+        width: 1
+        height: 1
+      - metric: rpi_cpu_load
+        width: 1
+        height: 1
+
+  # ---- 第 2 行：RPi 存储 + OpenWrt 概览 ----
+  - row: "存储 & 路由"
+    panels:
+      - metric: rpi_disk_usage
+        width: 1
+        height: 1
+        title: "RPi 磁盘"
+      - metric: owrt_cpu_load
+        width: 1
+        height: 1
+        title: "OpenWrt CPU"
+      - metric: owrt_mem_usage
+        width: 1
+        height: 1
+        title: "OpenWrt 内存"
+      - metric: rpi_cpu_temp
+        width: 1
+        height: 1
+        title: "实时温度"
+
+  # ---- 第 3 行：OpenWrt 网络 ----
+  - row: "网络流量"
+    panels:
+      - metric: owrt_net_rx
+        width: 2
+        height: 1
+        title: "下载速率"
+      - metric: owrt_net_tx
+        width: 2
+        height: 1
+        title: "上传速率"
