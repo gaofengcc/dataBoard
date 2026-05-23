@@ -1,0 +1,16 @@
+[Unit]
+Description=DataBoard RPi System Metrics Collector
+Documentation=https://github.com/gaofengcc/dataBoard
+After=network.target
+
+[Service]
+Type=simple
+User=gaofeng
+Group=gaofeng
+ExecStart=/home/gaofeng/dataBoard/scripts/collect_rpi.py --loop
+Restart=always
+RestartSec=5
+Environment=COLLECT_INTERVAL=30
+
+[Install]
+WantedBy=multi-user.target

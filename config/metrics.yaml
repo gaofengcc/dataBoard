@@ -3,18 +3,15 @@
 # 每项指标定义查询规则、展示样式和刷新间隔
 # ============================================================
 
-# 指标定义。每个指标有一个唯一 id，供 layout.yaml 引用。
 metrics:
-  # --- 树莓派系统指标 ---
+  # ── 树莓派系统指标 ────────────────────────
   - id: rpi_cpu_temp
     name: "CPU 温度"
     unit: "°C"
     chart_type: line
     color: "#ff6384"
     refresh_interval: 5
-    # VictoriaMetrics PromQL 查询
-    query: 'avg(ha_sensor_value{entity_id=~".*cpu.*temp.*"})'
-    # 数据未被写入 VM 时的回退
+    query: 'rpi_cpu_temp{host="gaofengpi"}'
     mock:
       min: 40
       max: 75
@@ -26,7 +23,7 @@ metrics:
     chart_type: area
     color: "#36a2eb"
     refresh_interval: 5
-    query: 'avg(ha_sensor_value{entity_id=~".*memory.*used.*"})'
+    query: 'rpi_mem_usage_pct{host="gaofengpi"}'
     mock:
       min: 30
       max: 85
@@ -38,7 +35,7 @@ metrics:
     chart_type: line
     color: "#ffce56"
     refresh_interval: 5
-    query: 'avg(ha_sensor_value{entity_id=~".*cpu.*load.*"})'
+    query: 'rpi_load1{host="gaofengpi"}'
     mock:
       min: 0.2
       max: 4.0
@@ -50,24 +47,24 @@ metrics:
     chart_type: gauge
     color: "#4bc0c0"
     refresh_interval: 10
-    query: 'avg(ha_sensor_value{entity_id=~".*disk.*used.*"})'
+    query: 'rpi_disk_usage_pct{host="gaofengpi"}'
     mock:
       min: 40
       max: 90
       drift: 0.2
 
-  # --- OpenWrt 预留指标（后续接入） ---
+  # ── OpenWrt 系统指标 ──────────────────────
   - id: owrt_cpu_load
     name: "OpenWrt CPU"
-    unit: "%"
+    unit: ""
     chart_type: line
     color: "#9966ff"
     refresh_interval: 5
-    query: ''
+    query: 'owrt_load1{host="r66s"}'
     mock:
-      min: 10
-      max: 60
-      drift: 0.4
+      min: 0.1
+      max: 3.0
+      drift: 0.2
 
   - id: owrt_mem_usage
     name: "OpenWrt 内存"
@@ -75,32 +72,68 @@ metrics:
     chart_type: area
     color: "#ff9f40"
     refresh_interval: 5
-    query: ''
+    query: 'owrt_mem_usage_pct{host="r66s"}'
     mock:
-      min: 20
-      max: 70
+      min: 10
+      max: 50
       drift: 0.3
 
   - id: owrt_net_rx
-    name: "OpenWrt 网络接收"
-    unit: "Mbps"
+    name: "WAN 下载"
+    unit: "MB/s"
     chart_type: line
     color: "#00e396"
     refresh_interval: 5
-    query: ''
+    query: 'rate(owrt_wan_rx_bytes{host="r66s"}[1m]) / 1048576'
+    mock:
+      min: 0
+      max: 10
+      drift: 1.0
+
+  - id: owrt_net_tx
+    name: "WAN 上传"
+    unit: "MB/s"
+    chart_type: line
+    color: "#feb019"
+    refresh_interval: 5
+    query: 'rate(owrt_wan_tx_bytes{host="r66s"}[1m]) / 1048576'
+    mock:
+      min: 0
+      max: 5
+      drift: 0.5
+
+  - id: owrt_cpu_temp
+    name: "OpenWrt 温度"
+    unit: "°C"
+    chart_type: line
+    color: "#ff6384"
+    refresh_interval: 5
+    query: 'owrt_cpu_temp{host="r66s"}'
+    mock:
+      min: 40
+      max: 70
+      drift: 0.2
+
+  - id: owrt_lan_rx
+    name: "LAN 接收"
+    unit: "MB/s"
+    chart_type: line
+    color: "#00e396"
+    refresh_interval: 5
+    query: 'rate(owrt_lan_rx_bytes{host="r66s"}[1m]) / 1048576'
     mock:
       min: 0
       max: 50
       drift: 2.0
 
-  - id: owrt_net_tx
-    name: "OpenWrt 网络发送"
-    unit: "Mbps"
+  - id: owrt_lan_tx
+    name: "LAN 发送"
+    unit: "MB/s"
     chart_type: line
     color: "#feb019"
     refresh_interval: 5
-    query: ''
+    query: 'rate(owrt_lan_tx_bytes{host="r66s"}[1m]) / 1048576'
     mock:
       min: 0
-      max: 20
+      max: 30
       drift: 1.0
