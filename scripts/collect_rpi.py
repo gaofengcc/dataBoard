@@ -118,6 +118,115 @@ def get_disk_usage() -> dict | None:
     return None
 
 
+def get_fan_speed() -> int | None:
+    """风扇转速 RPM"""
+    try:
+        for hwmon in [f"/sys/devices/platform/cooling_fan/hwmon/hwmon{n}/fan1_input" for n in range(10)]:
+            try:
+                with open(hwmon) as f:
+                    return int(f.read().strip())
+            except (FileNotFoundError, OSError):
+                continue
+    except Exception:
+        pass
+    return None
+
+
+def get_ip_address() -> str | None:
+    """本机 IP 地址"""
+    try:
+        r = subprocess.run(
+            ["ip", "-4", "addr", "show"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in r.stdout.split("\n"):
+            if "inet " in line and "127.0.0.1" not in line:
+                return line.strip().split()[1].split("/")[0]
+    except Exception:
+        pass
+    return None
+
+
+def get_uptime_seconds() -> int | None:
+    """系统运行时间（秒）"""
+    val = read_sysfs("/proc/uptime")
+    if val:
+        return int(float(val.split()[0]))
+    return None
+
+
+def get_docker_status() -> dict | None:
+    """Docker 容器状态"""
+    try:
+        r = subprocess.run(
+            ["docker", "ps", "-a", "--format", "{{.Status}}"],
+            capture_output=True, text=True, timeout=10,
+        )
+        lines = [l.strip() for l in r.stdout.split("\n") if l.strip()]
+        total = len(lines)
+        running = sum(1 for l in lines if l.startswith("Up"))
+        return {"total": total, "running": running}
+    except Exception:
+        return None
+
+
+def get_docker_disk_bytes() -> int | None:
+    """Docker 占用的磁盘空间（字节）"""
+    try:
+        r = subprocess.run(
+            ["docker", "system", "df", "--format", "{{.Type}}\t{{.Size}}"],
+            capture_output=True, text=True, timeout=10,
+        )
+        total_bytes = 0
+        for line in r.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            parts = line.split("\t")
+            if len(parts) == 2 and parts[0] != "Build Cache":
+                size_str = parts[1].strip()
+                total_bytes += parse_size_to_bytes(size_str)
+        return total_bytes if total_bytes > 0 else None
+    except Exception:
+        return None
+
+
+def parse_size_to_bytes(s: str) -> int:
+    """10.5GB → bytes, 143.6MB → bytes"""
+    s = s.strip()
+    # 长后缀优先，避免 "GB" 被 "B" 匹配
+    multipliers = sorted(
+        {"GB": 1024**3, "MB": 1024**2, "KB": 1024, "TB": 1024**4, "B": 1, "kB": 1000}.items(),
+        key=lambda x: -len(x[0]),
+    )
+    for suffix, mult in multipliers:
+        if s.endswith(suffix):
+            try:
+                num = float(s[: -len(suffix)])
+                return int(num * mult)
+            except ValueError:
+                return 0
+    # 纯数字
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
+
+def get_net_bytes(iface: str = "wlan0") -> dict | None:
+    """网卡累计流量"""
+    try:
+        with open("/proc/net/dev") as f:
+            for line in f:
+                if line.strip().startswith(iface + ":"):
+                    parts = line.split()
+                    rx = int(parts[1])
+                    tx = int(parts[9])
+                    return {"rx_bytes": rx, "tx_bytes": tx}
+    except Exception:
+        pass
+    return None
+
+
 # ── 推送 ──────────────────────────────────
 def push(metrics: list[dict]) -> bool:
     """NDJSON 批量推送到 VictoriaMetrics"""
@@ -180,7 +289,52 @@ def collect() -> list[dict]:
     if disk:
         metrics.append({"name": "rpi_disk_usage_pct", "value": disk["used_pct"], "labels": {"unit": "percent"}})
         metrics.append({"name": "rpi_disk_avail_gb", "value": disk["avail_gb"], "labels": {"unit": "gb"}})
-        print(f"  rpi_disk: {disk['used_pct']}% used ({disk['avail_gb']}GB avail)")
+        metrics.append({"name": "rpi_disk_total_gb", "value": disk["total_gb"], "labels": {"unit": "gb"}})
+        metrics.append({"name": "rpi_disk_used_gb", "value": disk["used_gb"], "labels": {"unit": "gb"}})
+        print(f"  rpi_disk: {disk['used_pct']}% used ({disk['used_gb']}/{disk['total_gb']}GB)")
+
+    # 风扇转速
+    fan = get_fan_speed()
+    if fan is not None:
+        metrics.append({"name": "rpi_fan_speed", "value": fan, "labels": {"unit": "rpm"}})
+        print(f"  rpi_fan_speed: {fan} RPM")
+
+    # IP 地址（作为标签值，推数值 1 表示存在）
+    ip = get_ip_address()
+    if ip:
+        metrics.append({"name": "rpi_ip_info", "value": 1, "labels": {"ip": ip}})
+        print(f"  rpi_ip: {ip}")
+
+    # 运行时间（秒）
+    uptime = get_uptime_seconds()
+    if uptime is not None:
+        metrics.append({"name": "rpi_uptime_seconds", "value": uptime, "labels": {"unit": "seconds"}})
+        days = uptime // 86400
+        hours = (uptime % 86400) // 3600
+        mins = (uptime % 3600) // 60
+        print(f"  rpi_uptime: {days}d {hours:02d}:{mins:02d}")
+
+    # Docker 状态
+    docker = get_docker_status()
+    if docker:
+        metrics.append({"name": "rpi_docker_running", "value": docker["running"], "labels": {"type": "running"}})
+        metrics.append({"name": "rpi_docker_total", "value": docker["total"], "labels": {"type": "total"}})
+        print(f"  rpi_docker: {docker['running']}/{docker['total']} running")
+
+    # Docker 磁盘占用
+    dk_disk = get_docker_disk_bytes()
+    if dk_disk is not None:
+        metrics.append({"name": "rpi_docker_disk_bytes", "value": dk_disk, "labels": {"unit": "bytes"}})
+        print(f"  rpi_docker_disk: {dk_disk / (1024**3):.1f}GB")
+
+    # 网络累计流量（用于在 dashboard 用 rate() 算网速）
+    net = get_net_bytes()
+    if net:
+        metrics.append({"name": "rpi_net_rx_bytes", "value": net["rx_bytes"], "labels": {"interface": "wlan0", "unit": "bytes"}})
+        metrics.append({"name": "rpi_net_tx_bytes", "value": net["tx_bytes"], "labels": {"interface": "wlan0", "unit": "bytes"}})
+        rx_mb = round(net["rx_bytes"] / 1048576, 1)
+        tx_mb = round(net["tx_bytes"] / 1048576, 1)
+        print(f"  rpi_net: ↓{rx_mb}MB ↑{tx_mb}MB")
 
     return metrics
 

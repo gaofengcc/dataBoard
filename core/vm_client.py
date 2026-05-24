@@ -26,7 +26,7 @@ class VMClient:
             return False
 
     async def query(self, promql: str) -> list[dict]:
-        """执行即时查询，返回 time series 列表"""
+        """执行即时查询，返回 time series 列表（含 labels）"""
         if not promql:
             return []
         try:
@@ -36,7 +36,15 @@ class VMClient:
             )
             r.raise_for_status()
             data = r.json()
-            return data.get("data", {}).get("result", [])
+            results = data.get("data", {}).get("result", [])
+            # 标准化：每个 result 包含 metric+labels 和 value
+            return [
+                {
+                    "labels": res.get("metric", {}),
+                    "value": res.get("value", [None, None])[1],
+                }
+                for res in results
+            ]
         except Exception as e:
             logger.warning("VM query failed: %s", e)
             return []

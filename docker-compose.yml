@@ -1,0 +1,25 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: databoard-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config
+    environment:
+      - VM_URL=http://192.168.100.6:8428
+      - CONFIG_DIR=/app/config
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: databoard-frontend
+    ports:
+      - "8766:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

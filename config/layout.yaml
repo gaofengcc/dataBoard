@@ -3,12 +3,27 @@
 # ============================================================
 
 title: "系统监控看板"
-refresh_interval: 5
+refresh_interval: 10
 
 layout:
-  # ── 第 1 行：RPi 概览 ────────────────────
+  # ── 树莓派系统（核心看板，默认展开） ──────────
   - row: "树莓派系统"
+    collapsed: false
     panels:
+      # 第 1 排：状态卡片（4 格）
+      - metric: rpi_ip_info
+        width: 1
+        height: 1
+      - metric: rpi_uptime
+        width: 1
+        height: 1
+      - metric: rpi_disk_stat
+        width: 1
+        height: 1
+      - metric: rpi_docker_status
+        width: 1
+        height: 1
+      # 第 2 排：曲线图表（4 格）
       - metric: rpi_cpu_temp
         width: 2
         height: 1
@@ -18,63 +33,45 @@ layout:
       - metric: rpi_cpu_load
         width: 1
         height: 1
+      # 第 3 排：风扇 + 网速（2 格）
+      - metric: rpi_fan_speed
+        width: 2
+        height: 1
+      - metric: rpi_net_speed
+        width: 2
+        height: 1
 
-  # ── 第 2 行：RPi 存储 + 磁盘 ─────────────
-  - row: "存储 & 状态"
-    panels:
-      - metric: rpi_disk_usage
-        width: 1
-        height: 1
-        title: "RPi 磁盘"
-      - metric: rpi_cpu_temp
-        width: 1
-        height: 1
-        title: "实时温度"
-      - metric: owrt_cpu_temp
-        width: 1
-        height: 1
-        title: "OpenWrt 温度"
-      - metric: owrt_mem_usage
-        width: 1
-        height: 1
-        title: "OpenWrt 内存"
-
-  # ── 第 3 行：OpenWrt 概览 ────────────────
+  # ── OpenWrt 系统 ─────────────────────────
   - row: "OpenWrt 系统"
+    collapsed: true
     panels:
       - metric: owrt_cpu_load
         width: 1
         height: 1
-        title: "CPU 负载"
       - metric: owrt_cpu_temp
         width: 1
         height: 1
-        title: "CPU 温度"
       - metric: owrt_mem_usage
         width: 2
         height: 1
-        title: "内存使用率"
 
-  # ── 第 4 行：网络流量 ────────────────────
-  - row: "网络流量"
+  # ── 网络流量 ─────────────────────────────
+  - row: "WAN 流量"
+    collapsed: true
     panels:
       - metric: owrt_net_rx
         width: 2
         height: 1
-        title: "WAN 下载"
       - metric: owrt_net_tx
         width: 2
         height: 1
-        title: "WAN 上传"
 
-  # ── 第 5 行：LAN 流量 ────────────────────
-  - row: "内网流量"
+  - row: "LAN 流量"
+    collapsed: true
     panels:
       - metric: owrt_lan_rx
         width: 2
         height: 1
-        title: "LAN 接收"
       - metric: owrt_lan_tx
         width: 2
         height: 1
-        title: "LAN 发送"

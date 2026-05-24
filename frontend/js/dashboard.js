@@ -1,94 +1,68 @@
 /**
- * DataBoard — WebSocket 实时看板客户端
+ * DataBoard — REST 轮询看板客户端
  *
- * 从 WebSocket 接收 JSON 数据流，渲染 ApexCharts 仪表板。
- * API 布局信息在页面首次加载时由服务端注入。
+ * 启动时 fetchConfig() → 渲染布局 + 初始化 ApexCharts
+ * 定时器 → fetchData() 每 refresh_interval 秒 → 更新图表
  */
 
 // =========================================
 // 全局状态
 // =========================================
 const state = {
-    ws: null,
-    reconnectTimer: null,
     charts: {},        // metricId -> ApexCharts instance
     panels: {},        // metricId -> panel DOM
     layout: null,
     metricDefs: {},    // metricId -> def (from server)
-    historyLen: 180,   // 5s × 180 = 15min
+    refreshInterval: 10,
+    pollTimer: null,
 };
 
 // =========================================
-// WebSocket 连接管理
+// 初始化
 // =========================================
-const wsBase = `ws://${location.host}/ws`;
+async function initDashboard() {
+    try {
+        const config = await fetchConfig();
+        state.layout = config;
+        state.metricDefs = Object.fromEntries(
+            (config.metrics || []).map(m => [m.id, m])
+        );
+        state.refreshInterval = config.refresh_interval || 10;
 
-function connectWS() {
-    if (state.ws && state.ws.readyState === WebSocket.OPEN) return;
-
-    const ws = new WebSocket(wsBase);
-    state.ws = ws;
-
-    ws.onopen = () => {
-        setConnStatus(true);
-        // 请求布局 + 各指标配置
-        ws.send(JSON.stringify({ type: 'init' }));
-    };
-
-    ws.onmessage = (e) => {
-        try {
-            const msg = JSON.parse(e.data);
-            handleMessage(msg);
-        } catch (err) {
-            console.warn('WS parse error:', err);
-        }
-    };
-
-    ws.onclose = () => {
-        setConnStatus(false);
-        scheduleReconnect();
-    };
-
-    ws.onerror = () => {
-        ws.close();
-    };
+        renderDashboard();
+        startPolling();
+        updateConnStatus(true);
+    } catch (err) {
+        console.error('Failed to load config:', err);
+        updateConnStatus(false);
+        // 重试
+        setTimeout(initDashboard, 3000);
+    }
 }
 
-function scheduleReconnect() {
-    if (state.reconnectTimer) return;
-    state.reconnectTimer = setTimeout(() => {
-        state.reconnectTimer = null;
-        connectWS();
-    }, 3000);
+function startPolling() {
+    if (state.pollTimer) clearInterval(state.pollTimer);
+    // 立即拉一次
+    pollData();
+    state.pollTimer = setInterval(pollData, state.refreshInterval * 1000);
 }
 
-function setConnStatus(connected) {
+async function pollData() {
+    try {
+        const data = await fetchData();
+        updatePanels(data.metrics || []);
+        updateTimestamp(data.timestamp);
+        updateConnStatus(true);
+    } catch (err) {
+        console.warn('Poll failed:', err);
+    }
+}
+
+function updateConnStatus(connected) {
     const el = document.getElementById('conn-status');
     if (el) {
         el.textContent = connected ? '● 已连接' : '○ 断开';
         el.style.color = connected ? '#00e396' : '#ff6384';
-    }
-}
-
-// =========================================
-// 消息处理
-// =========================================
-function handleMessage(msg) {
-    switch (msg.type) {
-        case 'layout':
-            // 首次加载：接收布局 + 指标定义
-            state.layout = msg.layout;
-            state.metricDefs = Object.fromEntries(
-                (msg.metrics || []).map(m => [m.id, m])
-            );
-            renderDashboard();
-            break;
-
-        case 'data':
-            // 实时数据推送
-            updatePanels(msg.metrics || []);
-            updateTimestamp(msg.timestamp);
-            break;
     }
 }
 
@@ -205,7 +179,6 @@ function createPanel(panelDef, def, chartPanels) {
             </div>
             <div class="panel-chart" id="chart-${def.id}"></div>
         `;
-        // 延迟初始化：等 DOM 挂载后再渲染
         chartPanels.push({
             def: def,
             chartEl: div.querySelector('.panel-chart'),
@@ -257,6 +230,7 @@ function initChart(def, chartEl) {
             series: [0],
         };
     } else {
+        // *** BUG FIX ***: 当 chart_type 为 'area' 时，chart.type 设为 'area' 而非 'line'
         const chartType = (def.chart_type === 'area') ? 'area' : 'line';
         opts = {
             chart: {
@@ -327,15 +301,6 @@ function initChart(def, chartEl) {
 // =========================================
 // 数据更新
 // =========================================
-function formatUptime(seconds) {
-    const d = Math.floor(seconds / 86400);
-    const h = Math.floor((seconds % 86400) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    if (d > 0) return `${d}d ${h}h ${m}m`;
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
-}
-
 function updatePanels(metrics) {
     for (const m of metrics) {
         const chart = state.charts[m.id];
@@ -354,7 +319,6 @@ function updatePanels(metrics) {
 
             if (fmt === 'uptime') {
                 // 运行时间: 秒 → "1h 30m"
-                // 副标题: 显示启动时间 "启动 01:12"
                 const sec = parseFloat(m.value);
                 if (!isNaN(sec)) {
                     statVal.textContent = formatUptime(Math.floor(sec));
@@ -401,13 +365,11 @@ function updatePanels(metrics) {
                     }
                 }
             } else if (def.label_key === 'ip') {
-                // IP 地址: 从 labels 中提取
                 const labelKey = def.label_key || 'ip';
                 const labels = m.labels || {};
                 statVal.textContent = labels[labelKey] || '--';
                 if (statSub) statSub.textContent = 'wlan0';
             } else {
-                // 默认: 显示数值
                 const num = parseFloat(m.value);
                 statVal.textContent = isNaN(num) ? '--' : num.toFixed(0);
                 if (statSub && def.unit) statSub.textContent = def.unit;
@@ -416,7 +378,6 @@ function updatePanels(metrics) {
         }
 
         // ── 图表卡片更新 ──
-        // 更新数值
         if (valEl && m.value !== undefined && m.value !== null) {
             const num = typeof m.value === 'number' ? m.value : parseFloat(m.value);
             if (!isNaN(num)) {
@@ -424,7 +385,6 @@ function updatePanels(metrics) {
             }
         }
 
-        // 更新图表
         if (chart && m.history && m.history.length > 0) {
             const data = m.history.map(p => ({ x: p.t, y: p.v }));
             if (m.chart_type === 'gauge') {
@@ -463,17 +423,8 @@ function updateTimestamp(ts) {
 }
 
 // =========================================
-// 工具
-// =========================================
-function escHtml(s) {
-    if (!s) return '';
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    return String(s).replace(/[&<>"']/g, c => map[c]);
-}
-
-// =========================================
 // 启动
 // =========================================
 document.addEventListener('DOMContentLoaded', () => {
-    connectWS();
+    initDashboard();
 });

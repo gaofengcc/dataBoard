@@ -1,11 +1,17 @@
 """
 指标引擎 — 按 config 调度查询、mock 回退、数据格式化
+逻辑完全保留自旧版 core/metrics_engine.py：
+  - VM 优先 → mock 回退 → 300 点 FIFO 历史缓冲区
+  - 10s 间隔 × 300 点 = 50 分钟
+支持通过 refresh_interval 配置
 """
 
 import asyncio
 import random
 import logging
 from datetime import datetime, timezone
+
+from app.core.vm_client import VMClient, VMClientError
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +40,9 @@ class MetricsEngine:
     优先查 VM，VM 无数据回退 mock
     """
 
-    def __init__(self, vm_client, metrics_config: list[dict]):
+    MAX_HISTORY = 300  # 10s 间隔 × 300 点 = 50 分钟
+
+    def __init__(self, vm_client: VMClient, metrics_config: list[dict]):
         self.vm = vm_client
         self.metrics = {m["id"]: m for m in metrics_config}
         self._mocks: dict[str, MockMetricGenerator] = {}
@@ -59,15 +67,19 @@ class MetricsEngine:
 
         # 1) 查 VM
         if cfg.get("query"):
-            results = await self.vm.query(cfg["query"])
-            if results:
-                try:
-                    value = float(results[0]["value"])
-                    source = "vm"
-                    # 保留 labels 用于 stat 卡片（如 IP 地址）
-                    vm_labels = results[0].get("labels", {})
-                except (ValueError, KeyError, IndexError):
-                    pass
+            try:
+                results = await self.vm.query(cfg["query"])
+                if results:
+                    try:
+                        value = float(results[0]["value"])
+                        source = "vm"
+                        # 保留 labels 用于 stat 卡片（如 IP 地址）
+                        vm_labels = results[0].get("labels", {})
+                    except (ValueError, KeyError, IndexError):
+                        pass
+            except VMClientError as e:
+                logger.debug("VM query failed for %s: %s", metric_id, e)
+                # VM 异常不阻断，继续尝试 mock
 
         # 2) VM 无数据 → mock
         if value is None and cfg.get("mock"):
@@ -81,9 +93,9 @@ class MetricsEngine:
         if metric_id not in self._history:
             self._history[metric_id] = []
         self._history[metric_id].append((now, value))
-        # 只保留最近 300 个点 (5s 间隔 × 300 = 25min)
-        if len(self._history[metric_id]) > 300:
-            self._history[metric_id] = self._history[metric_id][-300:]
+        # 只保留最近 300 个点 (10s 间隔 × 300 = 50min)
+        if len(self._history[metric_id]) > self.MAX_HISTORY:
+            self._history[metric_id] = self._history[metric_id][-self.MAX_HISTORY:]
 
         return {
             "id": metric_id,
@@ -102,7 +114,7 @@ class MetricsEngine:
         }
 
     async def fetch_all(self) -> list[dict]:
-        """获取所有指标数据"""
+        """获取所有指标数据（并行查询）"""
         tasks = [self.fetch(mid) for mid in self.metrics]
         results = await asyncio.gather(*tasks)
         return [r for r in results if r is not None]

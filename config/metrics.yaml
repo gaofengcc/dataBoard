@@ -1,16 +1,80 @@
 # ============================================================
 # DataBoard - 指标定义配置
-# 每项指标定义查询规则、展示样式和刷新间隔
 # ============================================================
 
 metrics:
-  # ── 树莓派系统指标 ────────────────────────
+  # ── 树莓派：状态卡片（纯数字/文字展示） ──────────
+  - id: rpi_ip_info
+    name: "IP 地址"
+    unit: ""
+    chart_type: stat
+    color: "#36a2eb"
+    refresh_interval: 10
+    query: 'rpi_ip_info{host="gaofengpi"}'
+    # stat 类型在 value 位置显示标签值
+    label_key: "ip"
+
+  - id: rpi_uptime
+    name: "运行时间"
+    unit: ""
+    chart_type: stat
+    color: "#00e396"
+    refresh_interval: 10
+    query: 'rpi_uptime_seconds{host="gaofengpi"}'
+    stat_format: "uptime"    # 自动格式化为 Xd XXh XXm
+
+  - id: rpi_fan_speed
+    name: "风扇转速"
+    unit: "RPM"
+    chart_type: line
+    color: "#9966ff"
+    refresh_interval: 10
+    query: 'rpi_fan_speed{host="gaofengpi"}'
+    mock:
+      min: 0
+      max: 8000
+      drift: 5
+
+  - id: rpi_docker_status
+    name: "Docker"
+    unit: ""
+    chart_type: stat
+    color: "#4bc0c0"
+    refresh_interval: 10
+    query: 'rpi_docker_running{host="gaofengpi"}'
+    stat_format: "fraction"
+    stat_total_query: 'rpi_docker_total{host="gaofengpi"}'
+
+  - id: rpi_disk_stat
+    name: "磁盘使用"
+    unit: "GB"
+    chart_type: stat
+    color: "#ff9f40"
+    refresh_interval: 10
+    query: 'rpi_disk_used_gb{host="gaofengpi"}'
+    stat_format: "disk"
+
+  # 隐藏指标：用于磁盘 stat 卡组合展示
+  - id: __rpi_disk_total
+    name: ""
+    chart_type: _hidden
+    refresh_interval: 10
+    query: 'rpi_disk_total_gb{host="gaofengpi"}'
+
+  # 隐藏指标：Docker 磁盘占用
+  - id: __rpi_docker_disk
+    name: ""
+    chart_type: _hidden
+    refresh_interval: 10
+    query: 'rpi_docker_disk_bytes{host="gaofengpi"}'
+
+  # ── 树莓派：曲线图表 ────────────────────────
   - id: rpi_cpu_temp
     name: "CPU 温度"
     unit: "°C"
     chart_type: line
     color: "#ff6384"
-    refresh_interval: 5
+    refresh_interval: 10
     query: 'rpi_cpu_temp{host="gaofengpi"}'
     mock:
       min: 40
@@ -21,8 +85,8 @@ metrics:
     name: "内存使用"
     unit: "%"
     chart_type: area
-    color: "#36a2eb"
-    refresh_interval: 5
+    color: "#fdcb6e"
+    refresh_interval: 10
     query: 'rpi_mem_usage_pct{host="gaofengpi"}'
     mock:
       min: 30
@@ -34,26 +98,23 @@ metrics:
     unit: ""
     chart_type: line
     color: "#ffce56"
-    refresh_interval: 5
+    refresh_interval: 10
     query: 'rpi_load1{host="gaofengpi"}'
     mock:
       min: 0.2
       max: 4.0
       drift: 0.1
 
-  - id: rpi_disk_usage
-    name: "磁盘使用"
-    unit: "%"
-    chart_type: gauge
-    color: "#4bc0c0"
+  - id: rpi_net_speed
+    name: "网速"
+    unit: "KB/s"
+    chart_type: line
+    color: "#00e396"
     refresh_interval: 10
-    query: 'rpi_disk_usage_pct{host="gaofengpi"}'
-    mock:
-      min: 40
-      max: 90
-      drift: 0.2
+    # 用 rate() 算每秒字节数，/1024 转 KB/s
+    query: 'rate(rpi_net_rx_bytes{host="gaofengpi"}[2m]) / 1024'
 
-  # ── OpenWrt 系统指标 ──────────────────────
+  # ── OpenWrt 系统 ──────────────────────────
   - id: owrt_cpu_load
     name: "OpenWrt CPU"
     unit: ""
@@ -78,6 +139,19 @@ metrics:
       max: 50
       drift: 0.3
 
+  - id: owrt_cpu_temp
+    name: "OpenWrt 温度"
+    unit: "°C"
+    chart_type: line
+    color: "#ff6384"
+    refresh_interval: 5
+    query: 'owrt_cpu_temp{host="r66s"}'
+    mock:
+      min: 40
+      max: 70
+      drift: 0.2
+
+  # ── 网络流量 ──────────────────────────────
   - id: owrt_net_rx
     name: "WAN 下载"
     unit: "MB/s"
@@ -101,18 +175,6 @@ metrics:
       min: 0
       max: 5
       drift: 0.5
-
-  - id: owrt_cpu_temp
-    name: "OpenWrt 温度"
-    unit: "°C"
-    chart_type: line
-    color: "#ff6384"
-    refresh_interval: 5
-    query: 'owrt_cpu_temp{host="r66s"}'
-    mock:
-      min: 40
-      max: 70
-      drift: 0.2
 
   - id: owrt_lan_rx
     name: "LAN 接收"
