@@ -70,9 +70,7 @@ print(f'  → {count} 条记录, {size/1024:.0f} KB')
     rm -f "/tmp/ha_export_${metric}.json"
 done
 
-# 保留最近 10 份备份
-ls -t "$BACKUP_DIR"/*.jsonl 2>/dev/null | tail -n +11 | xargs -r rm -f
-
+# 不限时间，一直保存
 echo "✅ 备份完成: $BACKUP_DIR"
 echo "当前备份文件:"
 ls -lh "$BACKUP_DIR" 2>/dev/null | tail -10
