@@ -116,7 +116,7 @@ metrics:
 
   # ── OpenWrt 系统 ──────────────────────────
   - id: owrt_cpu_load
-    name: "OpenWrt CPU"
+    name: "CPU"
     unit: ""
     chart_type: line
     color: "#9966ff"
@@ -128,7 +128,7 @@ metrics:
       drift: 0.2
 
   - id: owrt_mem_usage
-    name: "OpenWrt 内存"
+    name: "内存"
     unit: "%"
     chart_type: area
     color: "#4bc0c0"
@@ -140,7 +140,7 @@ metrics:
       drift: 0.3
 
   - id: owrt_cpu_temp
-    name: "OpenWrt 温度"
+    name: "温度"
     unit: "°C"
     chart_type: line
     color: "#ff6384"
