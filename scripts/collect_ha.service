@@ -1,0 +1,16 @@
+[Unit]
+Description=DataBoard HA Sensor Collector (real-time)
+Documentation=https://github.com/gaofengcc/dataBoard
+After=network.target
+
+[Service]
+Type=simple
+User=gaofeng
+Group=gaofeng
+ExecStart=/home/gaofeng/dataBoard/scripts/collect_ha.py --loop
+Restart=always
+RestartSec=5
+Environment=COLLECT_INTERVAL=10
+
+[Install]
+WantedBy=multi-user.target
