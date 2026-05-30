@@ -152,8 +152,8 @@ function renderDashboard() {
     }
 
     // 第 2 遍：DOM 挂载完成后初始化图表
-    for (const {def, chartEl} of chartPanels) {
-        initChart(def, chartEl);
+    for (const {def, chartEl, panelHeight} of chartPanels) {
+        initChart(def, chartEl, panelHeight);
     }
 }
 
@@ -194,6 +194,7 @@ function createPanel(panelDef, def, chartPanels) {
         chartPanels.push({
             def: def,
             chartEl: div.querySelector('.panel-chart'),
+            panelHeight: h,
         });
     }
 
@@ -203,7 +204,7 @@ function createPanel(panelDef, def, chartPanels) {
 // =========================================
 // ApexCharts 初始化
 // =========================================
-function initChart(def, chartEl) {
+function initChart(def, chartEl, panelHeight) {
     if (!chartEl) {
         chartEl = document.getElementById(`chart-${def.id}`);
     }
@@ -245,7 +246,7 @@ function initChart(def, chartEl) {
         };
     } else if (isMulti) {
         // 多系列折线图（温湿度按房间拆分）
-        const chartH = panelDef.height >= 1.5 ? 240 : 160;
+        const chartH = (panelHeight >= 1.5) ? 240 : 160;
         opts = {
             chart: {
                 type: 'line',
