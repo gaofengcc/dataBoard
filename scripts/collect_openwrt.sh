@@ -1,119 +1,90 @@
 #!/bin/bash
-# ==========================================================
-# OpenWrt (R66S) 系统指标采集
-# 从 RPi 上 SSH 到 R66S 采集数据，推送 VictoriaMetrics
-# ==========================================================
+# ============================================================
+# OpenWrt (R66S) 系统指标采集 — HTTP GET 版
+#
+# 从 R66S 的 CGI 接口获取数据，推送到 VictoriaMetrics
+# 数据流：Pi curl → R66S uhttpd/cgi-bin/metrics → Pi 解析 → VM
+# ============================================================
 
 set -e
 
 VM_URL="${VM_URL:-http://localhost:8428/api/v1/import}"
-R66S="${R66S:-root@192.168.100.1}"
+R66S_URL="${R66S_URL:-http://192.168.100.1/cgi-bin/metrics}"
 INTERVAL="${COLLECT_INTERVAL:-30}"
 
-# ── SSH 采集 (返回 raw key=value 行) ──────
-collect_r66s_raw() {
-    ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no "$R66S" '
-
-# CPU 温度
-t=$(cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo 0)
-echo "temp=$t"
-
-# CPU 负载
-l=$(cat /proc/loadavg)
-echo "load1=$(echo "$l" | cut -d" " -f1)"
-echo "load5=$(echo "$l" | cut -d" " -f2)"
-echo "load15=$(echo "$l" | cut -d" " -f3)"
-
-# 内存 (KB)
-mt=$(grep MemTotal /proc/meminfo | grep -o "[0-9]*")
-mf=$(grep MemFree /proc/meminfo | grep -o "[0-9]*")
-mb=$(grep "^Buffers:" /proc/meminfo | grep -o "[0-9]*")
-mc=$(grep "^Cached:" /proc/meminfo | grep -o "[0-9]*")
-ma=$(( mf + mb + mc ))
-echo "mem_total=$mt"
-echo "mem_avail=$ma"
-echo "mem_used_pct=$(awk -v t="$mt" -v a="$ma" "BEGIN {printf \"%.1f\", (1-a/t)*100}")"
-
-# 网络
-wan_rx=$(awk "/pppoe-wan:/ {print \$2}" /proc/net/dev)
-wan_tx=$(awk "/pppoe-wan:/ {print \$10}" /proc/net/dev)
-lan_rx=$(awk "/br-lan:/ {print \$2}" /proc/net/dev)
-lan_tx=$(awk "/br-lan:/ {print \$10}" /proc/net/dev)
-echo "wan_rx=$wan_rx"
-echo "wan_tx=$wan_tx"
-echo "lan_rx=$lan_rx"
-echo "lan_tx=$lan_tx"
-
-# 运行时间
-echo "uptime=$(cat /proc/uptime | cut -d" " -f1)"
-'
-}
-
-
-# ── 解析 raw 数据 → NDJSON ────────────────
-to_ndjson() {
-    local line key val
-    now_ms=$(($(date +%s) * 1000))
-
-    while IFS='=' read -r key val; do
-        [ -z "$key" ] && continue
-        case "$key" in
-            temp)          echo '{"metric":{"__name__":"owrt_cpu_temp","host":"r66s","unit":"celsius"},"values":['"$(awk "BEGIN {printf \"%.1f\", $val/1000}")"'],"timestamps":['$now_ms']}'
-                ;;
-            load1)         echo '{"metric":{"__name__":"owrt_load1","host":"r66s","type":"load"},"values":['$val'],"timestamps":['$now_ms']}'
-                ;;
-            mem_used_pct)  echo '{"metric":{"__name__":"owrt_mem_usage_pct","host":"r66s","unit":"percent"},"values":['$val'],"timestamps":['$now_ms']}'
-                ;;
-            wan_rx)        echo '{"metric":{"__name__":"owrt_wan_rx_bytes","host":"r66s","interface":"pppoe-wan","unit":"bytes"},"values":['$val'],"timestamps":['$now_ms']}'
-                ;;
-            wan_tx)        echo '{"metric":{"__name__":"owrt_wan_tx_bytes","host":"r66s","interface":"pppoe-wan","unit":"bytes"},"values":['$val'],"timestamps":['$now_ms']}'
-                ;;
-            lan_rx)        echo '{"metric":{"__name__":"owrt_lan_rx_bytes","host":"r66s","interface":"br-lan","unit":"bytes"},"values":['$val'],"timestamps":['$now_ms']}'
-                ;;
-            lan_tx)        echo '{"metric":{"__name__":"owrt_lan_tx_bytes","host":"r66s","interface":"br-lan","unit":"bytes"},"values":['$val'],"timestamps":['$now_ms']}'
-                ;;
-        esac
-    done
-}
-
-
-# ── 推送 ──────────────────────────────────
-push() {
-    local data="$1"
-    if [ -z "$data" ]; then
-        echo "  → no data"
+# ── 单次采集+推送 ────────────────────────────
+collect_and_push() {
+    # 1) 从 R66S HTTP 接口取 JSON
+    json=$(curl -s --max-time 5 "$R66S_URL" 2>/dev/null) || {
+        echo "  → ✗ HTTP fetch failed"
         return 1
-    fi
+    }
 
-    echo "$data" | curl -s -X POST "$VM_URL" \
-        -H "Content-Type: application/json" \
-        --data-binary @- > /dev/null 2>&1
+    [ -z "$json" ] && {
+        echo "  → ✗ empty response"
+        return 1
+    }
 
-    if [ $? -eq 0 ]; then
-        echo "  → ✓ pushed to VM"
-    else
-        echo "  → ✗ push failed"
-    fi
+    # 2) 用 Python 解析 JSON 并推 VM
+    echo "$json" | python3 -c "
+import json, sys, time, urllib.request
+
+data = json.load(sys.stdin)
+now_ms = int(time.time() * 1000)
+
+# 指标定义: (metric_name, value, extra_labels)
+metrics = [
+    ('owrt_cpu_temp',   data.get('cpu_temp', 0),       {'host': 'r66s', 'unit': 'celsius'}),
+    ('owrt_load1',      data.get('load1', 0),           {'host': 'r66s', 'type': 'load'}),
+    ('owrt_mem_usage_pct', data.get('mem_used_pct', 0), {'host': 'r66s', 'unit': 'percent'}),
+    ('owrt_wan_rx_bytes', data.get('wan_rx_bytes', 0),  {'host': 'r66s', 'interface': 'pppoe-wan', 'unit': 'bytes'}),
+    ('owrt_wan_tx_bytes', data.get('wan_tx_bytes', 0),  {'host': 'r66s', 'interface': 'pppoe-wan', 'unit': 'bytes'}),
+    ('owrt_lan_rx_bytes', data.get('lan_rx_bytes', 0),  {'host': 'r66s', 'interface': 'br-lan', 'unit': 'bytes'}),
+    ('owrt_lan_tx_bytes', data.get('lan_tx_bytes', 0),  {'host': 'r66s', 'interface': 'br-lan', 'unit': 'bytes'}),
+]
+
+lines = []
+for name, val, labels in metrics:
+    try:
+        v = float(val)
+    except (TypeError, ValueError):
+        v = 0
+    lines.append(json.dumps({
+        'metric': {'__name__': name, **labels},
+        'values': [v],
+        'timestamps': [now_ms],
+    }))
+
+payload = '\n'.join(lines) + '\n'
+req = urllib.request.Request('${VM_URL}',
+    data=payload.encode(),
+    headers={'Content-Type': 'application/json'})
+try:
+    urllib.request.urlopen(req, timeout=5)
+    print('  → ✓ pushed to VM')
+except Exception as e:
+    print(f'  → ✗ VM push failed: {e}')
+" 2>&1 || echo "  → ✗ parse/push error"
 }
 
+# ── 打印当前值（供调试） ───────────────────────
+print_values() {
+    json=$(curl -s --max-time 5 "$R66S_URL" 2>/dev/null)
+    [ -n "$json" ] && echo "$json" | python3 -m json.tool
+}
 
-# ── 入口 ──────────────────────────────────
+# ── 入口 ────────────────────────────────────
 if [ "$1" = "--loop" ]; then
-    echo "[OpenWrt Collector] Starting loop (interval=${INTERVAL}s)"
+    echo "[OpenWrt Collector] Starting loop (interval=${INTERVAL}s, source=R66S HTTP)"
     while true; do
         ts=$(date "+%H:%M:%S")
         echo ""
         echo "[$ts] Collecting R66S..."
-        raw=$(collect_r66s_raw)
-        ndjson=$(echo "$raw" | to_ndjson)
-        echo "$ndjson" | head -c 300
-        echo ""
-        push "$ndjson"
+        collect_and_push
         sleep "$INTERVAL"
     done
+elif [ "$1" = "--print" ]; then
+    print_values
 else
-    raw=$(collect_r66s_raw)
-    ndjson=$(echo "$raw" | to_ndjson)
-    echo "$ndjson"
-    push "$ndjson"
+    collect_and_push
 fi
