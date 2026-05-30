@@ -85,7 +85,7 @@ metrics:
     name: "内存使用"
     unit: "%"
     chart_type: area
-    color: "#fdcb6e"
+    color: "#36a2eb"
     refresh_interval: 10
     query: 'rpi_mem_usage_pct{host="gaofengpi"}'
     mock:

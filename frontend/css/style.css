@@ -113,17 +113,10 @@ body {
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
     overflow: hidden;
-    transition: grid-template-rows .3s ease, opacity .3s ease;
 }
 
 .row-grid.collapsed {
-    grid-template-rows: 0fr;
-    opacity: 0;
-    margin: 0;
-    padding: 0;
-    gap: 0;
-    min-height: 0;
-    pointer-events: none;
+    display: none;
 }
 
 /* ---- Panel Cards ---- */
@@ -253,12 +246,40 @@ body {
     }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 768px) {
     .row-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .panel-chart {
+        height: 200px;
     }
     .header {
-        flex-direction: column;
-        align-items: flex-start;
+        padding: 10px 16px;
+    }
+    .title {
+        font-size: 16px;
+    }
+    .header-meta {
+        gap: 6px;
+    }
+    .badge {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    .dashboard {
+        padding: 12px 12px;
+        gap: 8px;
+    }
+    .panel {
+        padding: 8px;
+    }
+    .panel:not(.panel-stat) {
+        grid-column: 1 / -1 !important;
+    }
+    .stat-value {
+        font-size: 22px;
+    }
+    .panel.h-2 .panel-chart {
+        height: 360px;
     }
 }

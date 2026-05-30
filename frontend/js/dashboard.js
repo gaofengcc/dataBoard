@@ -243,6 +243,7 @@ function initChart(def, chartEl) {
                 toolbar: { show: false },
                 zoom: { enabled: false },
             },
+            dataLabels: { enabled: false },
             stroke: {
                 curve: 'smooth',
                 width: 2,
