@@ -78,3 +78,35 @@ class VMClient:
 
     async def close(self):
         await self._client.aclose()
+
+    async def query_range(self, promql: str, start: float, end: float, step: int = 10) -> list[dict]:
+        """
+        执行范围查询，返回每个 series 的完整时间序列
+        返回格式: [{"labels": {...}, "values": [[ts, val], ...]}, ...]
+        """
+        if not promql:
+            return []
+        try:
+            r = await self._client.get(
+                f"{self.base_url}/api/v1/query_range",
+                params={"query": promql, "start": int(start), "end": int(end), "step": step},
+                timeout=10,
+            )
+            r.raise_for_status()
+            data = r.json()
+            results = data.get("data", {}).get("result", [])
+            return [
+                {
+                    "labels": res.get("metric", {}),
+                    "values": res.get("values", []),
+                }
+                for res in results
+            ]
+        except httpx.TimeoutException as e:
+            raise VMTimeoutError(f"VM range query timeout: {e}") from e
+        except httpx.ConnectError as e:
+            raise VMConnectionError(f"VM range query failed: {e}") from e
+        except httpx.HTTPStatusError as e:
+            raise VMConnectionError(f"VM HTTP error: {e}") from e
+        except Exception as e:
+            raise VMClientError(f"VM range query failed: {e}") from e

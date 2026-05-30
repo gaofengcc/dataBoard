@@ -168,7 +168,8 @@ function createPanel(panelDef, def, chartPanels) {
     if (w > 1) div.style.gridColumn = `span ${w}`;
 
     const h = panelDef.height || 1;
-    if (h > 1) div.classList.add('h-2');
+    if (h > 1.5) div.classList.add('h-2');
+    else if (h > 1) div.classList.add('h-1-5');
 
     const title = panelDef.title || def.name || def.id;
 

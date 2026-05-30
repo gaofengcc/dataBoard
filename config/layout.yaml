@@ -98,10 +98,10 @@ layout:
     panels:
       - metric: ha_temperature
         width: 2
-        height: 1
+        height: 1.5
       - metric: ha_humidity
         width: 2
-        height: 1
+        height: 1.5
       - metric: ha_formaldehyde
         width: 2
         height: 1

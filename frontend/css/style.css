@@ -217,6 +217,11 @@ body {
     height: 160px;
 }
 
+/* panel 高度 1.5x */
+.panel.h-1-5 .panel-chart {
+    height: 240px;
+}
+
 /* panel 高度 2x = 2 倍高 */
 .panel.h-2 .panel-chart {
     height: 360px;
@@ -264,5 +269,8 @@ body {
     }
     .panel.h-2 .panel-chart {
         height: 360px;
+    }
+    .panel.h-1-5 .panel-chart {
+        height: 300px;
     }
 }
