@@ -58,6 +58,18 @@ layout:
       - metric: owrt_lan_port
         width: 1
         height: 1
+      - metric: owrt_uptime
+        width: 1
+        height: 1
+      - metric: owrt_devices
+        width: 1
+        height: 1
+      - metric: owrt_ip_info
+        width: 1
+        height: 1
+      - metric: owrt_version
+        width: 1
+        height: 1
       - metric: owrt_overlay_stat
         width: 1
         height: 1

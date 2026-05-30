@@ -277,3 +277,39 @@ metrics:
     refresh_interval: 30
     query: 'owrt_iface_eth1{host="r66s"}'
     stat_format: "iface"
+
+  # ── OpenWrt 系统信息 ────────────────────
+  - id: owrt_uptime
+    name: "运行时间"
+    unit: ""
+    chart_type: stat
+    color: "#00e396"
+    refresh_interval: 30
+    query: 'owrt_uptime_seconds{host="r66s"}'
+    stat_format: "uptime"
+
+  - id: owrt_devices
+    name: "已连接设备"
+    unit: ""
+    chart_type: stat
+    color: "#36a2eb"
+    refresh_interval: 30
+    query: 'owrt_device_count{host="r66s"}'
+
+  - id: owrt_ip_info
+    name: "IP 地址"
+    unit: ""
+    chart_type: stat
+    color: "#4bc0c0"
+    refresh_interval: 30
+    query: 'owrt_ip_info{host="r66s"}'
+    label_key: "ip"
+
+  - id: owrt_version
+    name: "系统版本"
+    unit: ""
+    chart_type: stat
+    color: "#9966ff"
+    refresh_interval: 60
+    query: 'owrt_version{host="r66s"}'
+    label_key: "version"
