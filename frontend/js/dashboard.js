@@ -297,7 +297,7 @@ function initChart(def, chartEl) {
                 theme: 'dark',
                 x: { format: 'HH:mm:ss' },
                 y: {
-                    formatter: (v) => `${v.toFixed(1)} ${def.unit || ''}`,
+                    formatter: (v) => `${v.toFixed(v < 0.1 ? 3 : v < 1 ? 2 : 1)} ${def.unit || ''}`,
                 },
             },
             colors: Object.values(ROOM_COLORS),
@@ -371,7 +371,7 @@ function initChart(def, chartEl) {
                             if (mode === 'gb_mb') return `${(v * 1024).toFixed(1)} MB`;
                             return `${v.toFixed(1)} GB`;
                         }
-                        return `${v.toFixed(1)} ${def.unit || ''}`;
+                        return `${v.toFixed(v < 0.1 ? 3 : v < 1 ? 2 : 1)} ${def.unit || ''}`;
                     },
                 },
             },
@@ -491,7 +491,7 @@ function updatePanels(metrics) {
                 }
             } else {
                 const num = parseFloat(m.value);
-                statVal.textContent = isNaN(num) ? '--' : num.toFixed(0);
+                statVal.textContent = isNaN(num) ? '--' : (num < 0.1 ? num.toFixed(3) : num < 1 ? num.toFixed(2) : num.toFixed(0));
                 if (statSub && def.unit) statSub.textContent = def.unit;
             }
             continue;
@@ -541,7 +541,7 @@ function updatePanels(metrics) {
                         displayUnit = 'MB';
                     }
                 }
-                valEl.innerHTML = `${displayVal.toFixed(1)} <span class="unit">${escHtml(displayUnit)}</span>`;
+                valEl.innerHTML = `${displayVal.toFixed(displayVal < 0.1 ? 3 : displayVal < 1 ? 2 : 1)} <span class="unit">${escHtml(displayUnit)}</span>`;
             }
         }
 
