@@ -9,8 +9,9 @@ services:
     volumes:
       - ./config:/app/config
     environment:
-      - VM_URL=http://192.168.100.6:8428
+      - VM_URL=http://192.168.100.5:8428
       - CONFIG_DIR=/app/config
+      - NO_PROXY=localhost,127.0.0.1,192.168.100.5
     restart: unless-stopped
 
   frontend:

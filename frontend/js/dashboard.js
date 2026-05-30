@@ -332,14 +332,19 @@ function updatePanels(metrics) {
             const fmt = (def.stat_format || '');
 
             if (fmt === 'uptime') {
-                // 运行时间: 秒 → "1h 30m"
+                // 运行时间: 秒 → "1h 30m" (支持设备和启动时间子文本)
                 const sec = parseFloat(m.value);
                 if (!isNaN(sec)) {
                     statVal.textContent = formatUptime(Math.floor(sec));
                     if (statSub) {
-                        const boot = new Date(Date.now() - sec * 1000);
-                        const pad = (n) => String(n).padStart(2, '0');
-                        statSub.textContent = `启动 ${pad(boot.getHours())}:${pad(boot.getMinutes())}`;
+                        const labels = m.labels || {};
+                        if (labels.devices) {
+                            statSub.textContent = `${labels.devices} 台设备`;
+                        } else {
+                            const boot = new Date(Date.now() - sec * 1000);
+                            const pad = (n) => String(n).padStart(2, '0');
+                            statSub.textContent = `启动 ${pad(boot.getHours())}:${pad(boot.getMinutes())}`;
+                        }
                     }
                 }
             } else if (fmt === 'fraction') {
@@ -391,11 +396,27 @@ function updatePanels(metrics) {
                     statVal.textContent = '断开';
                     if (statSub) statSub.textContent = '⛔';
                 }
+            } else if (fmt === 'cpu_status') {
+                // CPU: 主值=频率MHz, 子文本=进程数
+                const labels = m.labels || {};
+                statVal.textContent = `${parseFloat(m.value).toFixed(0)}MHz`;
+                if (statSub) statSub.textContent = `${labels.processes || '?'} 进程`;
+            } else if (fmt === 'port_pair') {
+                // 网口: 主值="W:{speed}M L:{speed}M", 子文本=duplex
+                const labels = m.labels || {};
+                statVal.textContent = `W:${labels.wan_speed||'?'}M L:${labels.lan_speed||'?'}M`;
+                if (statSub) statSub.textContent = labels.duplex || '';
             } else if (def.label_key === 'ip') {
                 const labelKey = def.label_key || 'ip';
                 const labels = m.labels || {};
                 statVal.textContent = labels[labelKey] || '--';
-                if (statSub) statSub.textContent = 'wlan0';
+                if (statSub) {
+                    if (labels.version) {
+                        statSub.textContent = labels.version;
+                    } else {
+                        statSub.textContent = 'wlan0';
+                    }
+                }
             } else {
                 const num = parseFloat(m.value);
                 statVal.textContent = isNaN(num) ? '--' : num.toFixed(0);

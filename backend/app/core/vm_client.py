@@ -29,6 +29,9 @@ class VMClient:
 
     def __init__(self, base_url: str | None = None):
         self.base_url = (base_url or os.environ.get("VM_URL", "http://localhost:8428")).rstrip("/")
+        # 清除 Docker 注入的代理变量，httpx 会受其影响
+        for k in ['http_proxy','https_proxy','HTTP_PROXY','HTTPS_PROXY','all_proxy','ALL_PROXY']:
+            os.environ.pop(k, None)
         self._client = httpx.AsyncClient(timeout=5)
 
     async def health(self) -> bool:

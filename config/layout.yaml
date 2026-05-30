@@ -46,35 +46,23 @@ layout:
     collapsed: true
     panels:
       # 状态卡片（上面）
-      - metric: owrt_cpu_freq
-        width: 1
+      - metric: owrt_system_info
+        width: 2
         height: 1
-      - metric: owrt_processes
-        width: 1
+      - metric: owrt_system_status
+        width: 2
         height: 1
-      - metric: owrt_wan_port
-        width: 1
+      - metric: owrt_cpu_status
+        width: 2
         height: 1
-      - metric: owrt_lan_port
-        width: 1
-        height: 1
-      - metric: owrt_uptime
-        width: 1
-        height: 1
-      - metric: owrt_devices
-        width: 1
-        height: 1
-      - metric: owrt_ip_info
-        width: 1
-        height: 1
-      - metric: owrt_version
-        width: 1
+      - metric: owrt_net_ports
+        width: 2
         height: 1
       - metric: owrt_overlay_stat
-        width: 1
+        width: 2
         height: 1
       - metric: owrt_usb_stat
-        width: 1
+        width: 2
         height: 1
       # 曲线图表（下面）
       - metric: owrt_cpu_load

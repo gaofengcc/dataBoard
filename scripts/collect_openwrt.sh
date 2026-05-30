@@ -50,6 +50,11 @@ metrics = [
     ('owrt_device_count', data.get('dhcp_leases', 0), {'host': 'r66s', 'unit': 'devices'}),
     ('owrt_ip_info', 1, {'host': 'r66s', 'ip': data.get('lan_ip', '?')}),
     ('owrt_version', 1, {'host': 'r66s', 'version': str(data.get('system_version', '?'))}),
+    # 组合指标
+    ('owrt_system_info', 1, {'host': 'r66s', 'ip': data.get('lan_ip', '?'), 'version': str(data.get('system_version', '?'))}),
+    ('owrt_system_status', data.get('uptime_seconds', 0), {'host': 'r66s', 'devices': str(data.get('dhcp_leases', 0))}),
+    ('owrt_cpu_status', data.get('cpu_freq_mhz', 0), {'host': 'r66s', 'processes': str(data.get('process_count', 0))}),
+    ('owrt_net_ports', 1, {'host': 'r66s', 'wan_speed': str(data.get('eth0_speed', '?')), 'lan_speed': str(data.get('eth1_speed', '?')), 'duplex': 'full'}),
     ('owrt_wan_rx_bytes', data.get('wan_rx_bytes', 0),  {'host': 'r66s', 'interface': 'pppoe-wan', 'unit': 'bytes'}),
     ('owrt_wan_tx_bytes', data.get('wan_tx_bytes', 0),  {'host': 'r66s', 'interface': 'pppoe-wan', 'unit': 'bytes'}),
     ('owrt_lan_rx_bytes', data.get('lan_rx_bytes', 0),  {'host': 'r66s', 'interface': 'br-lan', 'unit': 'bytes'}),

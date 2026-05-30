@@ -313,3 +313,40 @@ metrics:
     refresh_interval: 60
     query: 'owrt_version{host="r66s"}'
     label_key: "version"
+
+  # ── 组合卡片 ────────────────────────────
+  - id: owrt_system_info
+    name: "系统信息"
+    unit: ""
+    chart_type: stat
+    color: "#4bc0c0"
+    refresh_interval: 30
+    query: 'owrt_system_info{host="r66s"}'
+    label_key: "ip"
+
+  - id: owrt_system_status
+    name: "运行状态"
+    unit: ""
+    chart_type: stat
+    color: "#00e396"
+    refresh_interval: 10
+    query: 'owrt_system_status{host="r66s"}'
+    stat_format: "uptime"
+
+  - id: owrt_cpu_status
+    name: "CPU"
+    unit: ""
+    chart_type: stat
+    color: "#9966ff"
+    refresh_interval: 10
+    query: 'owrt_cpu_status{host="r66s"}'
+    stat_format: "cpu_status"
+
+  - id: owrt_net_ports
+    name: "网口"
+    unit: ""
+    chart_type: stat
+    color: "#36a2eb"
+    refresh_interval: 30
+    query: 'owrt_net_ports{host="r66s"}'
+    stat_format: "port_pair"
