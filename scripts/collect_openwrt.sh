@@ -79,6 +79,11 @@ req = urllib.request.Request('${VM_URL}',
     headers={'Content-Type': 'application/json'})
 try:
     urllib.request.urlopen(req, timeout=5)
+    # 强制刷盘，确保数据立即可查询
+    try:
+        urllib.request.urlopen('http://localhost:8428/internal/force_flush', timeout=2)
+    except Exception:
+        pass
     print('  → ✓ pushed to VM')
 except Exception as e:
     print(f'  → ✗ VM push failed: {e}')
