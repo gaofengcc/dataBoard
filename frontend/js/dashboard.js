@@ -245,10 +245,11 @@ function initChart(def, chartEl) {
         };
     } else if (isMulti) {
         // 多系列折线图（温湿度按房间拆分）
+        const chartH = panelDef.height >= 1.5 ? 240 : 160;
         opts = {
             chart: {
                 type: 'line',
-                height: '100%',
+                height: chartH,
                 animations: {
                     enabled: true,
                     dynamicAnimation: { speed: 500 },
