@@ -258,3 +258,22 @@ metrics:
     chart_type: _hidden
     refresh_interval: 30
     query: 'owrt_usb_total_gb{host="r66s"}'
+
+  # ── OpenWrt 网口状态 ────────────────────
+  - id: owrt_wan_port
+    name: "WAN 口"
+    unit: ""
+    chart_type: stat
+    color: "#00e396"
+    refresh_interval: 30
+    query: 'owrt_iface_eth0{host="r66s"}'
+    stat_format: "iface"
+
+  - id: owrt_lan_port
+    name: "LAN 口"
+    unit: ""
+    chart_type: stat
+    color: "#36a2eb"
+    refresh_interval: 30
+    query: 'owrt_iface_eth1{host="r66s"}'
+    stat_format: "iface"

@@ -44,6 +44,8 @@ metrics = [
     ('owrt_overlay_total_gb', data.get('overlay_total_gb', 0),{'host': 'r66s', 'unit': 'gb'}),
     ('owrt_usb_used_gb', data.get('usb_used_gb', 0),   {'host': 'r66s', 'unit': 'gb'}),
     ('owrt_usb_total_gb', data.get('usb_total_gb', 0), {'host': 'r66s', 'unit': 'gb'}),
+    ('owrt_iface_eth0', data.get('eth0_carrier', 0),  {'host': 'r66s', 'speed': str(data.get('eth0_speed', '?')), 'duplex': 'full'}),
+    ('owrt_iface_eth1', data.get('eth1_carrier', 0),  {'host': 'r66s', 'speed': str(data.get('eth1_speed', '?')), 'duplex': 'full'}),
     ('owrt_wan_rx_bytes', data.get('wan_rx_bytes', 0),  {'host': 'r66s', 'interface': 'pppoe-wan', 'unit': 'bytes'}),
     ('owrt_wan_tx_bytes', data.get('wan_tx_bytes', 0),  {'host': 'r66s', 'interface': 'pppoe-wan', 'unit': 'bytes'}),
     ('owrt_lan_rx_bytes', data.get('lan_rx_bytes', 0),  {'host': 'r66s', 'interface': 'br-lan', 'unit': 'bytes'}),

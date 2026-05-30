@@ -379,6 +379,18 @@ function updatePanels(metrics) {
                         statSub.innerHTML = `<div class="stat-bar"><div class="stat-bar-fill" style="width:${Math.min(100,pct)}%"></div></div> ${pct.toFixed(0)}%`;
                     }
                 }
+            } else if (fmt === 'iface') {
+                // 网口状态: carrier=1 → "1000Mbps ↑", carrier=0 → "断开"
+                const labels = m.labels || {};
+                const carrier = parseInt(m.value);
+                const speed = labels.speed || '?';
+                if (carrier) {
+                    statVal.textContent = `${speed}Mbps ↑`;
+                    if (statSub) statSub.textContent = '已连接';
+                } else {
+                    statVal.textContent = '断开';
+                    if (statSub) statSub.textContent = '⛔';
+                }
             } else if (def.label_key === 'ip') {
                 const labelKey = def.label_key || 'ip';
                 const labels = m.labels || {};
