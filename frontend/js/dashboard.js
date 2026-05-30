@@ -383,7 +383,23 @@ function updatePanels(metrics) {
         if (valEl && m.value !== undefined && m.value !== null) {
             const num = typeof m.value === 'number' ? m.value : parseFloat(m.value);
             if (!isNaN(num)) {
-                valEl.innerHTML = `${num.toFixed(1)} <span class="unit">${escHtml(m.unit || '')}</span>`;
+                let displayVal = num;
+                let displayUnit = m.unit || '';
+                // 自适应单位：< 2 MB/s 显示 KB/s
+                if (def.adaptive_unit && m.unit === 'MB/s') {
+                    if (num < 2) {
+                        displayVal = num * 1024;
+                        displayUnit = 'KB/s';
+                    }
+                }
+                // 自适应单位：< 2 GB 显示 MB
+                if (def.adaptive_unit && m.unit === 'GB') {
+                    if (num < 2) {
+                        displayVal = num * 1024;
+                        displayUnit = 'MB';
+                    }
+                }
+                valEl.innerHTML = `${displayVal.toFixed(1)} <span class="unit">${escHtml(displayUnit)}</span>`;
             }
         }
 

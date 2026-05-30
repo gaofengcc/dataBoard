@@ -159,6 +159,7 @@ metrics:
     color: "#00e396"
     refresh_interval: 5
     query: 'rate(owrt_wan_rx_bytes{host="r66s"}[1m]) / 1048576'
+    adaptive_unit: true
     mock:
       min: 0
       max: 10
@@ -171,6 +172,7 @@ metrics:
     color: "#feb019"
     refresh_interval: 5
     query: 'rate(owrt_wan_tx_bytes{host="r66s"}[1m]) / 1048576'
+    adaptive_unit: true
     mock:
       min: 0
       max: 5
@@ -183,6 +185,7 @@ metrics:
     color: "#36a2eb"
     refresh_interval: 5
     query: 'rate(owrt_lan_rx_bytes{host="r66s"}[1m]) / 1048576'
+    adaptive_unit: true
     mock:
       min: 0
       max: 50
@@ -195,6 +198,7 @@ metrics:
     color: "#ff9f40"
     refresh_interval: 5
     query: 'rate(owrt_lan_tx_bytes{host="r66s"}[1m]) / 1048576'
+    adaptive_unit: true
     mock:
       min: 0
       max: 30

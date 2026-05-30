@@ -10,7 +10,7 @@ Group=gaofeng
 ExecStart=/home/gaofeng/dataBoard/scripts/collect_openwrt.sh --loop
 Restart=always
 RestartSec=5
-Environment=COLLECT_INTERVAL=30
+Environment=COLLECT_INTERVAL=10
 
 [Install]
 WantedBy=multi-user.target

@@ -59,5 +59,5 @@ def clean_metric_for_frontend(metric: dict) -> dict:
     清洗指标定义：移除后端专用字段，只返回前端需要的信息
     """
     allowed = {"id", "name", "unit", "chart_type", "color", "refresh_interval",
-               "stat_format", "label_key"}
+               "stat_format", "label_key", "adaptive_unit"}
     return {k: v for k, v in metric.items() if k in allowed}
