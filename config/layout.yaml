@@ -45,6 +45,7 @@ layout:
   - row: "OpenWrt 系统"
     collapsed: true
     panels:
+      # 系统状态
       - metric: owrt_cpu_load
         width: 1
         height: 1
@@ -54,21 +55,14 @@ layout:
       - metric: owrt_mem_usage
         width: 2
         height: 1
-
-  # ── 网络流量 ─────────────────────────────
-  - row: "WAN 流量"
-    collapsed: true
-    panels:
+      # WAN 流量
       - metric: owrt_net_rx
         width: 2
         height: 1
       - metric: owrt_net_tx
         width: 2
         height: 1
-
-  - row: "LAN 流量"
-    collapsed: true
-    panels:
+      # LAN 流量
       - metric: owrt_lan_rx
         width: 2
         height: 1
