@@ -52,7 +52,17 @@ layout:
       - metric: owrt_cpu_temp
         width: 1
         height: 1
+      - metric: owrt_cpu_freq
+        width: 1
+        height: 1
+      - metric: owrt_processes
+        width: 1
+        height: 1
+      # 内存 + 连接数
       - metric: owrt_mem_usage
+        width: 2
+        height: 1
+      - metric: owrt_conntrack
         width: 2
         height: 1
       # WAN 流量
@@ -67,5 +77,12 @@ layout:
         width: 2
         height: 1
       - metric: owrt_lan_tx
+        width: 2
+        height: 1
+      # 磁盘
+      - metric: owrt_overlay_stat
+        width: 2
+        height: 1
+      - metric: owrt_usb_stat
         width: 2
         height: 1

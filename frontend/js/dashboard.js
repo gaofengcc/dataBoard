@@ -349,12 +349,13 @@ function updatePanels(metrics) {
                     statSub.textContent = diskGb ? `${status} · ${diskGb}GB` : status;
                 }
             } else if (fmt === 'disk') {
-                // 磁盘: used/total GB + 进度条
+                // 磁盘: used/total GB + 进度条 (支持多组 disk stat)
                 const used = parseFloat(m.value);
                 let total = 0;
                 let pct = 0;
+                const totalId = '__' + m.id.replace('_stat', '_total');
                 for (const other of metrics) {
-                    if (other.id === '__rpi_disk_total' && other.value) {
+                    if (other.id === totalId && other.value) {
                         total = parseFloat(other.value);
                     }
                 }

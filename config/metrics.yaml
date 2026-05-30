@@ -131,7 +131,7 @@ metrics:
     name: "OpenWrt 内存"
     unit: "%"
     chart_type: area
-    color: "#ff9f40"
+    color: "#4bc0c0"
     refresh_interval: 5
     query: 'owrt_mem_usage_pct{host="r66s"}'
     mock:
@@ -180,7 +180,7 @@ metrics:
     name: "LAN 接收"
     unit: "MB/s"
     chart_type: line
-    color: "#00e396"
+    color: "#36a2eb"
     refresh_interval: 5
     query: 'rate(owrt_lan_rx_bytes{host="r66s"}[1m]) / 1048576'
     mock:
@@ -192,10 +192,65 @@ metrics:
     name: "LAN 发送"
     unit: "MB/s"
     chart_type: line
-    color: "#feb019"
+    color: "#ff9f40"
     refresh_interval: 5
     query: 'rate(owrt_lan_tx_bytes{host="r66s"}[1m]) / 1048576'
     mock:
       min: 0
       max: 30
       drift: 1.0
+
+  # ── OpenWrt 新增指标 ─────────────────────
+  - id: owrt_cpu_freq
+    name: "CPU 频率"
+    unit: "MHz"
+    chart_type: stat
+    color: "#00e396"
+    refresh_interval: 30
+    query: 'owrt_cpu_freq{host="r66s"}'
+
+  - id: owrt_processes
+    name: "进程数"
+    unit: ""
+    chart_type: stat
+    color: "#36a2eb"
+    refresh_interval: 30
+    query: 'owrt_process_count{host="r66s"}'
+
+  - id: owrt_conntrack
+    name: "连接数"
+    unit: ""
+    chart_type: line
+    color: "#ff6384"
+    refresh_interval: 5
+    query: 'owrt_conntrack_count{host="r66s"}'
+
+  - id: owrt_overlay_stat
+    name: "系统磁盘"
+    unit: "GB"
+    chart_type: stat
+    color: "#ff9f40"
+    refresh_interval: 30
+    query: 'owrt_overlay_used_gb{host="r66s"}'
+    stat_format: "disk"
+
+  - id: __owrt_overlay_total
+    name: ""
+    chart_type: _hidden
+    refresh_interval: 30
+    query: 'owrt_overlay_total_gb{host="r66s"}'
+
+  - id: owrt_usb_stat
+    name: "USB 硬盘"
+    unit: "GB"
+    chart_type: stat
+    color: "#4bc0c0"
+    refresh_interval: 30
+    query: 'owrt_usb_used_gb{host="r66s"}'
+    stat_format: "disk"
+
+  - id: __owrt_usb_total
+    name: ""
+    chart_type: _hidden
+    refresh_interval: 30
+    query: 'owrt_usb_total_gb{host="r66s"}'
