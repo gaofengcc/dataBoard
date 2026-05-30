@@ -222,23 +222,6 @@ body {
     height: 360px;
 }
 
-/* 数据源标记 */
-.source-tag {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: rgba(0, 227, 150, .1);
-    color: var(--success);
-}
-
-.source-tag.mock {
-    background: rgba(255, 159, 64, .1);
-    color: #ff9f40;
-}
-
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
     .row-grid {

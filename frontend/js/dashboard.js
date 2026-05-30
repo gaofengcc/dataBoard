@@ -413,22 +413,7 @@ function updatePanels(metrics) {
             }
         }
 
-        // 数据源标记
-        if (panel) {
-            let tag = panel.querySelector('.source-tag');
-            if (!tag) {
-                tag = document.createElement('span');
-                tag.className = 'source-tag';
-                panel.appendChild(tag);
-            }
-            if (m.source === 'mock') {
-                tag.textContent = '模拟';
-                tag.className = 'source-tag mock';
-            } else {
-                tag.textContent = '实时';
-                tag.className = 'source-tag';
-            }
-        }
+        // 数据源标记已移除
     }
 }
 
