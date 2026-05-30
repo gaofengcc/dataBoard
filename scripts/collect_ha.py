@@ -53,6 +53,13 @@ SENSORS = {
         {"room": "客卫", "metric": "ha_temp"},
     "sensor.miaomiaoc_cn_blt_3_1b229tvvklo00_t2_relative_humidity_p_2_2":
         {"room": "客卫", "metric": "ha_hum"},
+    # 甲醛监测仪
+    "sensor.yuemee_cn_blt_3_1ic2lmrrkkk00_mhfdv2_temperature_p_4_1001":
+        {"room": "甲醛监测仪", "metric": "ha_temp"},
+    "sensor.yuemee_cn_blt_3_1ic2lmrrkkk00_mhfdv2_relative_humidity_p_4_1008":
+        {"room": "甲醛监测仪", "metric": "ha_hum"},
+    "sensor.yuemee_cn_blt_3_1ic2lmrrkkk00_mhfdv2_hcho_density_p_4_1030":
+        {"room": "甲醛监测仪", "metric": "ha_hcho"},
 }
 
 

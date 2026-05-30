@@ -96,39 +96,12 @@ layout:
   - row: "HA 设备"
     collapsed: true
     panels:
-      - metric: ha_temp_客厅
+      - metric: ha_temperature
         width: 2
         height: 1
-      - metric: ha_hum_客厅
+      - metric: ha_humidity
         width: 2
         height: 1
-      - metric: ha_temp_主卧
-        width: 2
-        height: 1
-      - metric: ha_hum_主卧
-        width: 2
-        height: 1
-      - metric: ha_temp_书房
-        width: 2
-        height: 1
-      - metric: ha_hum_书房
-        width: 2
-        height: 1
-      - metric: ha_temp_阳台
-        width: 2
-        height: 1
-      - metric: ha_hum_阳台
-        width: 2
-        height: 1
-      - metric: ha_temp_主卫
-        width: 2
-        height: 1
-      - metric: ha_hum_主卫
-        width: 2
-        height: 1
-      - metric: ha_temp_客卫
-        width: 2
-        height: 1
-      - metric: ha_hum_客卫
+      - metric: ha_formaldehyde
         width: 2
         height: 1

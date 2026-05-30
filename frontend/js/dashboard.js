@@ -18,6 +18,17 @@ const state = {
     adaptiveMode: {},  // metricId -> current unit mode ('kb'/'mb')
 };
 
+// 房间颜色映射（温湿度多曲线统一）
+const ROOM_COLORS = {
+    '客厅': '#ff6384',
+    '主卧': '#36a2eb',
+    '书房': '#00e396',
+    '阳台': '#feb019',
+    '主卫': '#9966ff',
+    '客卫': '#ff9f40',
+    '甲醛监测仪': '#4bc0c0',
+};
+
 // =========================================
 // 初始化
 // =========================================
@@ -148,6 +159,7 @@ function renderDashboard() {
 
 function createPanel(panelDef, def, chartPanels) {
     const isStat = def.chart_type === 'stat';
+    const isMulti = def.chart_type === 'multi_line';
     const div = document.createElement('div');
     div.className = isStat ? 'panel panel-stat' : 'panel';
     div.dataset.metricId = def.id;
@@ -174,9 +186,7 @@ function createPanel(panelDef, def, chartPanels) {
         div.innerHTML = `
             <div class="panel-header">
                 <span class="panel-title">${escHtml(title)}</span>
-                <span class="panel-value" id="val-${def.id}">
-                    -- <span class="unit">${escHtml(def.unit || '')}</span>
-                </span>
+                ${isMulti ? '' : `<span class="panel-value" id="val-${def.id}">-- <span class="unit">${escHtml(def.unit || '')}</span></span>`}
             </div>
             <div class="panel-chart" id="chart-${def.id}"></div>
         `;
@@ -199,11 +209,13 @@ function initChart(def, chartEl) {
     if (!chartEl) return;
 
     const isGauge = def.chart_type === 'gauge';
+    const isMulti = def.chart_type === 'multi_line';
     const color = def.color || '#36a2eb';
 
     let opts;
 
     if (isGauge) {
+        // ... gauge options (unchanged) ...
         opts = {
             chart: {
                 type: 'radialBar',
@@ -229,6 +241,65 @@ function initChart(def, chartEl) {
             },
             fill: { colors: [color] },
             series: [0],
+        };
+    } else if (isMulti) {
+        // 多系列折线图（温湿度按房间拆分）
+        opts = {
+            chart: {
+                type: 'line',
+                height: '100%',
+                animations: {
+                    enabled: true,
+                    dynamicAnimation: { speed: 500 },
+                },
+                toolbar: { show: false },
+                zoom: { enabled: false },
+            },
+            dataLabels: { enabled: false },
+            stroke: {
+                curve: 'smooth',
+                width: 2,
+            },
+            legend: {
+                show: true,
+                position: 'top',
+                horizontalAlign: 'left',
+                labels: { colors: '#8b8fa5' },
+                itemMargin: { horizontal: 8 },
+            },
+            series: [],
+            xaxis: {
+                type: 'datetime',
+                labels: {
+                    style: { colors: '#8b8fa5', fontSize: '10px' },
+                    format: 'HH:mm',
+                    datetimeUTC: false,
+                },
+                axisBorder: { show: true, color: '#2a2d3a' },
+                axisTicks: { show: true, color: '#2a2d3a' },
+            },
+            yaxis: {
+                forceNiceScale: true,
+                decimalsInFloat: 1,
+                labels: {
+                    style: { colors: '#8b8fa5', fontSize: '10px' },
+                    formatter: (v) => Number.isInteger(v) ? v.toString() : v.toFixed(1),
+                },
+            },
+            grid: {
+                show: true,
+                borderColor: '#2a2d3a',
+                strokeDashArray: 3,
+                xaxis: { lines: { show: false } },
+            },
+            tooltip: {
+                theme: 'dark',
+                x: { format: 'HH:mm:ss' },
+                y: {
+                    formatter: (v) => `${v.toFixed(1)} ${def.unit || ''}`,
+                },
+            },
+            colors: Object.values(ROOM_COLORS),
         };
     } else {
         // *** BUG FIX ***: 当 chart_type 为 'area' 时，chart.type 设为 'area' 而非 'line'
@@ -421,6 +492,20 @@ function updatePanels(metrics) {
                 const num = parseFloat(m.value);
                 statVal.textContent = isNaN(num) ? '--' : num.toFixed(0);
                 if (statSub && def.unit) statSub.textContent = def.unit;
+            }
+            continue;
+        }
+
+        // ── 多系列折线图更新 ──
+        if (def.chart_type === 'multi_line' && m.series) {
+            const chart = state.charts[m.id];
+            if (chart) {
+                const seriesData = m.series.map(s => ({
+                    name: s.name,
+                    color: ROOM_COLORS[s.name] || def.color,
+                    data: (s.history || []).map(p => ({ x: p.t, y: p.v })),
+                }));
+                chart.updateSeries(seriesData);
             }
             continue;
         }

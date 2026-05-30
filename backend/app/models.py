@@ -23,12 +23,13 @@ class MetricData(BaseModel):
     unit: str
     chart_type: str
     color: str
-    value: Any  # float, str, or None
-    source: str  # "vm" or "mock"
-    timestamp: float
-    labels: dict[str, Any]
+    value: Any = None  # float, str, or None
+    source: str = ""  # "vm" or "mock"
+    timestamp: float = 0
+    labels: dict[str, Any] = {}
     history: Optional[list[MetricHistoryPoint]] = None
     refresh_interval: Optional[int] = None
+    series: Optional[list[dict]] = None  # multi_line 多系列
 
 
 class DataResponse(BaseModel):

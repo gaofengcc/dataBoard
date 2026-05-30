@@ -352,98 +352,28 @@ metrics:
     stat_format: "port_pair"
 
   # ── HA 设备 ───────────────────────────────
-  - id: ha_temp_客厅
-    name: "客厅"
+  - id: ha_temperature
+    name: "温度"
     unit: "°C"
-    chart_type: stat
+    chart_type: multi_line
     color: "#ff6384"
-    refresh_interval: 60
-    query: 'last_over_time(ha_temp{room="客厅"}[30d])'
+    refresh_interval: 10
+    query: 'ha_temp'
+    split_by: "room"
 
-  - id: ha_hum_客厅
-    name: "客厅湿度"
+  - id: ha_humidity
+    name: "湿度"
     unit: "%"
-    chart_type: stat
+    chart_type: multi_line
     color: "#36a2eb"
-    refresh_interval: 60
-    query: 'last_over_time(ha_hum{room="客厅"}[30d])'
+    refresh_interval: 10
+    query: 'ha_hum'
+    split_by: "room"
 
-  - id: ha_temp_主卧
-    name: "主卧"
-    unit: "°C"
-    chart_type: stat
-    color: "#ff6384"
-    refresh_interval: 60
-    query: 'last_over_time(ha_temp{room="主卧"}[30d])'
-
-  - id: ha_hum_主卧
-    name: "主卧湿度"
-    unit: "%"
-    chart_type: stat
-    color: "#36a2eb"
-    refresh_interval: 60
-    query: 'last_over_time(ha_hum{room="主卧"}[30d])'
-
-  - id: ha_temp_书房
-    name: "书房"
-    unit: "°C"
-    chart_type: stat
-    color: "#ff6384"
-    refresh_interval: 60
-    query: 'last_over_time(ha_temp{room="书房"}[30d])'
-
-  - id: ha_hum_书房
-    name: "书房湿度"
-    unit: "%"
-    chart_type: stat
-    color: "#36a2eb"
-    refresh_interval: 60
-    query: 'last_over_time(ha_hum{room="书房"}[30d])'
-
-  - id: ha_temp_阳台
-    name: "阳台"
-    unit: "°C"
-    chart_type: stat
-    color: "#ff6384"
-    refresh_interval: 60
-    query: 'last_over_time(ha_temp{room="阳台"}[30d])'
-
-  - id: ha_hum_阳台
-    name: "阳台湿度"
-    unit: "%"
-    chart_type: stat
-    color: "#36a2eb"
-    refresh_interval: 60
-    query: 'last_over_time(ha_hum{room="阳台"}[30d])'
-
-  - id: ha_temp_主卫
-    name: "主卫"
-    unit: "°C"
-    chart_type: stat
-    color: "#ff6384"
-    refresh_interval: 60
-    query: 'last_over_time(ha_temp{room="主卫"}[30d])'
-
-  - id: ha_hum_主卫
-    name: "主卫湿度"
-    unit: "%"
-    chart_type: stat
-    color: "#36a2eb"
-    refresh_interval: 60
-    query: 'last_over_time(ha_hum{room="主卫"}[30d])'
-
-  - id: ha_temp_客卫
-    name: "客卫"
-    unit: "°C"
-    chart_type: stat
-    color: "#ff6384"
-    refresh_interval: 60
-    query: 'last_over_time(ha_temp{room="客卫"}[30d])'
-
-  - id: ha_hum_客卫
-    name: "客卫湿度"
-    unit: "%"
-    chart_type: stat
-    color: "#36a2eb"
-    refresh_interval: 60
-    query: 'last_over_time(ha_hum{room="客卫"}[30d])'
+  - id: ha_formaldehyde
+    name: "甲醛"
+    unit: "mg/m³"
+    chart_type: line
+    color: "#9966ff"
+    refresh_interval: 10
+    query: 'ha_hcho'

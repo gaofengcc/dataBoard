@@ -115,6 +115,86 @@ class MetricsEngine:
 
     async def fetch_all(self) -> list[dict]:
         """获取所有指标数据（并行查询）"""
-        tasks = [self.fetch(mid) for mid in self.metrics]
+        tasks = [self._fetch_or_multi(mid) for mid in self.metrics]
         results = await asyncio.gather(*tasks)
         return [r for r in results if r is not None]
+
+    async def _fetch_or_multi(self, metric_id: str) -> dict | None:
+        """根据 chart_type 选择单指标或多元查询"""
+        cfg = self.metrics.get(metric_id)
+        if not cfg:
+            return None
+        if cfg.get("chart_type") == "multi_line":
+            return await self.fetch_multi(metric_id)
+        return await self.fetch(metric_id)
+
+    async def fetch_multi(self, metric_id: str) -> dict | None:
+        """
+        多系列查询：一次查询返回按标签拆分的多个 series
+        用于 multi_line 图表（如按 room 拆分的温湿度）
+        """
+        cfg = self.metrics.get(metric_id)
+        if not cfg:
+            return None
+
+        now = datetime.now(timezone.utc).timestamp()
+        split_by = cfg.get("split_by", "room")
+        source = "mock"
+
+        series_data = []
+        if cfg.get("query"):
+            try:
+                results = await self.vm.query(cfg["query"])
+                if results:
+                    source = "vm"
+                    # 按 split_by 标签分组
+                    groups: dict[str, list] = {}
+                    for res in results:
+                        label_val = res["labels"].get(split_by, "unknown")
+                        groups.setdefault(label_val, []).append(res)
+
+                    for label_val, items in groups.items():
+                        # 取第一个结果的值和标签
+                        item = items[0]
+                        try:
+                            val = float(item["value"])
+                        except (ValueError, KeyError):
+                            continue
+
+                        # 维护每个系列自己的历史
+                        hist_key = f"{metric_id}__{label_val}"
+                        if hist_key not in self._history:
+                            self._history[hist_key] = []
+                        self._history[hist_key].append((now, val))
+                        if len(self._history[hist_key]) > self.MAX_HISTORY:
+                            self._history[hist_key] = self._history[hist_key][-self.MAX_HISTORY:]
+
+                        series_data.append({
+                            "name": label_val,
+                            "value": val,
+                            "timestamp": now,
+                            "labels": item.get("labels", {}),
+                            "history": [
+                                {"t": int(ts * 1000), "v": v}
+                                for ts, v in self._history[hist_key]
+                            ],
+                        })
+            except VMClientError as e:
+                logger.debug("VM multi query failed for %s: %s", metric_id, e)
+
+        if not series_data:
+            return None
+
+        return {
+            "id": metric_id,
+            "name": cfg.get("name", metric_id),
+            "unit": cfg.get("unit", ""),
+            "chart_type": "multi_line",
+            "color": cfg.get("color", "#36a2eb"),
+            "value": None,
+            "source": source,
+            "timestamp": now,
+            "labels": {},
+            "history": None,
+            "series": series_data,
+        }
