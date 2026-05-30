@@ -92,8 +92,8 @@ layout:
         width: 2
         height: 1
 
-  # ── HA 设备 ──────────────────────────────
-  - row: "HA 设备"
+  # ── HA 设备 ──
+  - row: "HA 环境监测"
     collapsed: true
     panels:
       - metric: ha_temperature
@@ -104,4 +104,41 @@ layout:
         height: 1.5
       - metric: ha_formaldehyde
         width: 2
+        height: 1
+
+  - row: "HA 门窗 & 人体"
+    collapsed: true
+    panels:
+      - metric: ha_door_presence
+        width: 4
+        height: 1.5
+
+  - row: "HA 空调 & 功耗"
+    collapsed: true
+    panels:
+      - metric: ha_ac_status
+        width: 2
+        height: 1.5
+      - metric: ha_power_chart
+        width: 2
+        height: 1.5
+
+  - row: "HA 电池健康"
+    collapsed: true
+    panels:
+      - metric: ha_battery_bar
+        width: 4
+        height: 1.5
+
+  - row: "HA 其它设备"
+    collapsed: true
+    panels:
+      - metric: ha_vacuum_gauge
+        width: 1
+        height: 1
+      - metric: ha_cover_gauge
+        width: 1
+        height: 1
+      - metric: ha_tracker_gauge
+        width: 1
         height: 1

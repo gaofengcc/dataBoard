@@ -351,7 +351,7 @@ metrics:
     query: 'owrt_net_ports{host="r66s"}'
     stat_format: "port_pair"
 
-  # ── HA 设备 ───────────────────────────────
+  # ── HA 设备 ── 环境监测曲线
   - id: ha_temperature
     name: "温度"
     unit: "°C"
@@ -377,3 +377,80 @@ metrics:
     color: "#9966ff"
     refresh_interval: 10
     query: 'ha_hcho'
+
+  # ── HA 设备 ── 门窗 & 人体状态矩阵
+  - id: ha_door_presence
+    name: "门窗 & 人体"
+    unit: ""
+    chart_type: heatmap
+    color: "#00e396"
+    refresh_interval: 10
+    query_door: 'ha_door'
+    query_presence: 'ha_presence'
+
+  # ── HA 设备 ── 空调运行状态
+  - id: ha_ac_status
+    name: "空调"
+    unit: ""
+    chart_type: bar_horizontal
+    color: "#36a2eb"
+    refresh_interval: 30
+    query: 'ha_ac'
+    split_by: "name"
+
+  # ── HA 设备 ── 电池健康
+  - id: ha_battery_bar
+    name: "电池电量"
+    unit: "%"
+    chart_type: bar_vertical
+    color: "#00e396"
+    refresh_interval: 300
+    query: 'last_over_time(ha_battery[10m])'
+    split_by: "room"
+
+  # ── HA 设备 ── 功耗曲线
+  - id: ha_power_chart
+    name: "实时功率"
+    unit: "W"
+    chart_type: multi_line
+    color: "#feb019"
+    refresh_interval: 10
+    query: 'ha_power'
+    split_by: "room"
+
+  # ── HA 设备 ── 其它设备 gauge
+  - id: ha_vacuum_gauge
+    name: "扫地机"
+    unit: "%"
+    chart_type: gauge
+    color: "#4bc0c0"
+    refresh_interval: 30
+    query: 'last_over_time(ha_battery{room="扫地机"}[10m])'
+    # state 在 ha_vacuum 的 label 中，engine 会读 gauge_state_label
+    gauge_state_query: 'last_over_time(ha_vacuum[10m])'
+    gauge_state_label: "state"
+    gauge_state_map:
+      docked: "停靠"
+      idle: "待机"
+      paused: "暂停"
+      cleaning: "清扫中"
+      returning: "返航"
+      error: "故障"
+
+  - id: ha_cover_gauge
+    name: "窗帘"
+    unit: "%"
+    chart_type: gauge
+    color: "#ff9f40"
+    refresh_interval: 30
+    query: 'last_over_time(ha_cover{name="窗帘"}[10m])'
+
+  - id: ha_tracker_gauge
+    name: "GPhone"
+    unit: ""
+    chart_type: gauge_bool
+    color: "#9966ff"
+    refresh_interval: 30
+    query: 'last_over_time(ha_tracker{name="GPhone"}[10m])'
+    gauge_true_label: "在家"
+    gauge_false_label: "外出"

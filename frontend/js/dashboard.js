@@ -160,6 +160,10 @@ function renderDashboard() {
 function createPanel(panelDef, def, chartPanels) {
     const isStat = def.chart_type === 'stat';
     const isMulti = def.chart_type === 'multi_line';
+    const isHeatmap = def.chart_type === 'heatmap';
+    const isBarV = def.chart_type === 'bar_vertical';
+    const isBarH = def.chart_type === 'bar_horizontal';
+    const isGaugeBool = def.chart_type === 'gauge_bool';
     const div = document.createElement('div');
     div.className = isStat ? 'panel panel-stat' : 'panel';
     div.dataset.metricId = def.id;
@@ -183,6 +187,17 @@ function createPanel(panelDef, def, chartPanels) {
                 <div class="stat-sub" id="stat-sub-${def.id}"></div>
             </div>
         `;
+    } else if (isHeatmap) {
+        div.innerHTML = `
+            <div class="panel-header"><span class="panel-title">${escHtml(title)}</span></div>
+            <div class="heatmap-grid" id="hm-${def.id}"></div>
+        `;
+    } else if (isBarV || isBarH) {
+        div.innerHTML = `
+            <div class="panel-header"><span class="panel-title">${escHtml(title)}</span></div>
+            <div class="panel-chart" id="chart-${def.id}"></div>
+        `;
+        chartPanels.push({ def, chartEl: div.querySelector('.panel-chart'), panelHeight: h });
     } else {
         div.innerHTML = `
             <div class="panel-header">
@@ -212,11 +227,14 @@ function initChart(def, chartEl, panelHeight) {
 
     const isGauge = def.chart_type === 'gauge';
     const isMulti = def.chart_type === 'multi_line';
+    const isBarV = def.chart_type === 'bar_vertical';
+    const isBarH = def.chart_type === 'bar_horizontal';
+    const isGaugeBool = def.chart_type === 'gauge_bool';
     const color = def.color || '#36a2eb';
 
     let opts;
 
-    if (isGauge) {
+    if (isGauge || isGaugeBool) {
         // ... gauge options (unchanged) ...
         opts = {
             chart: {
@@ -243,6 +261,49 @@ function initChart(def, chartEl, panelHeight) {
             },
             fill: { colors: [color] },
             series: [0],
+        };
+    } else if (isBarV || isBarH) {
+        const chartH = panelHeight >= 1.5 ? 240 : 160;
+        opts = {
+            chart: {
+                type: 'bar',
+                height: chartH,
+                toolbar: { show: false },
+                animations: { enabled: true, dynamicAnimation: { speed: 500 } },
+            },
+            plotOptions: {
+                bar: {
+                    horizontal: isBarH,
+                    borderRadius: 4,
+                    distributed: true,
+                    dataLabels: { position: isBarH ? 'center' : 'top' },
+                },
+            },
+            dataLabels: {
+                enabled: true,
+                style: { fontSize: '11px', colors: ['#e1e4ed'] },
+                formatter: (val, opts2) => {
+                    const b = opts2.w.globals.initialSeries[0].data[opts2.dataPointIndex];
+                    return b.label || val;
+                },
+            },
+            legend: { show: false },
+            xaxis: {
+                categories: [],
+                labels: { style: { colors: '#8b8fa5', fontSize: '10px' } },
+                axisBorder: { show: false },
+                axisTicks: { show: false },
+            },
+            yaxis: {
+                max: isBarV ? 100 : undefined,
+                labels: { style: { colors: '#8b8fa5', fontSize: '10px' } },
+            },
+            grid: { borderColor: '#2a2d3a', strokeDashArray: 3 },
+            tooltip: {
+                theme: 'dark',
+                y: { formatter: (v) => `${v}${def.unit || ''}` },
+            },
+            series: [{ name: def.name, data: [] }],
         };
     } else if (isMulti) {
         // 多系列折线图（温湿度按房间拆分）
@@ -513,6 +574,59 @@ function updatePanels(metrics) {
             continue;
         }
 
+        // ── heatmap 门窗&人体矩阵更新 ──
+        if (def.chart_type === 'heatmap' && m.cells) {
+            renderHeatmap(def.id, m.cells);
+            continue;
+        }
+
+        // ── bar_vertical / bar_horizontal 更新 ──
+        if ((def.chart_type === 'bar_vertical' || def.chart_type === 'bar_horizontal') && m.bars) {
+            const chart = state.charts[m.id];
+            if (chart) {
+                const cats = m.bars.map(b => b.name);
+                const data = m.bars.map(b => ({ x: b.name, y: b.value, label: b.label, fillColor: b.color }));
+                chart.updateOptions({ xaxis: { categories: cats } });
+                chart.updateSeries([{ name: def.name, data }]);
+            }
+            continue;
+        }
+
+        // ── gauge_bool 更新 ──
+        if (def.chart_type === 'gauge_bool') {
+            const chart = state.charts[m.id];
+            if (chart) {
+                const v = parseFloat(m.value) || 0;
+                chart.updateSeries([v >= 1 ? 100 : 0]);
+                // 更新副标题
+                const statSub = document.getElementById(`stat-sub-${m.id}`);
+                if (statSub && m.extra_label) statSub.textContent = m.extra_label;
+            }
+            continue;
+        }
+
+        // ── gauge 带状态标签更新 ──
+        if (def.chart_type === 'gauge' && m.extra_label) {
+            const chart = state.charts[m.id];
+            if (chart && m.history) {
+                const lastVal = m.history[m.history.length - 1].v;
+                chart.updateSeries([Math.min(100, Math.max(0, lastVal))]);
+            }
+            // 在 panel-title 旁边显示状态文字
+            const panel = state.panels[m.id];
+            if (panel && m.extra_label) {
+                let lbl = panel.querySelector('.gauge-extra-label');
+                if (!lbl) {
+                    lbl = document.createElement('span');
+                    lbl.className = 'gauge-extra-label';
+                    const header = panel.querySelector('.panel-header');
+                    if (header) header.appendChild(lbl);
+                }
+                lbl.textContent = m.extra_label;
+            }
+            continue;
+        }
+
         // ── 图表卡片更新 ──
         if (valEl && m.value !== undefined && m.value !== null) {
             const num = typeof m.value === 'number' ? m.value : parseFloat(m.value);
@@ -567,6 +681,30 @@ function updateTimestamp(ts) {
         const d = new Date(ts * 1000);
         el.textContent = d.toLocaleTimeString('zh-CN', { hour12: false });
     }
+}
+
+// =========================================
+// heatmap 门窗 & 人体矩阵渲染
+// =========================================
+function renderHeatmap(metricId, cells) {
+    const container = document.getElementById(`hm-${metricId}`);
+    if (!container) return;
+    container.innerHTML = '';
+    cells.forEach(cell => {
+        const div = document.createElement('div');
+        div.className = 'heatmap-cell';
+        const isActive = cell.value >= 1;
+        // row="门窗" → 开=红；row="人体" → 有人=橙
+        let color = '#22c55e';
+        if (cell.row === '门窗' && isActive)  color = '#ef4444';
+        if (cell.row === '人体' && isActive)  color = '#f97316';
+        div.style.background = color;
+        const name = cell.col || cell.name || '?';
+        const stateLbl = cell.label || cell.state_label || (isActive ? '触发' : '正常');
+        div.innerHTML = `<span class="heatmap-label">${escHtml(name)}</span>
+                         <span class="heatmap-state">${escHtml(stateLbl)}</span>`;
+        container.appendChild(div);
+    });
 }
 
 // =========================================
