@@ -15,6 +15,7 @@ const state = {
     metricDefs: {},    // metricId -> def (from server)
     refreshInterval: 10,
     pollTimer: null,
+    adaptiveMode: {},  // metricId -> current unit mode ('kb'/'mb')
 };
 
 // =========================================
@@ -289,11 +290,13 @@ function initChart(def, chartEl) {
                 y: {
                     formatter: (v) => {
                         if (def.adaptive_unit && def.unit === 'MB/s') {
-                            if (v < 2) return `${(v * 1024).toFixed(1)} KB/s`;
+                            const mode = state.adaptiveMode[def.id] || 'mb';
+                            if (mode === 'kb') return `${(v * 1024).toFixed(1)} KB/s`;
                             return `${v.toFixed(1)} MB/s`;
                         }
                         if (def.adaptive_unit && def.unit === 'GB') {
-                            if (v < 2) return `${(v * 1024).toFixed(1)} MB`;
+                            const mode = state.adaptiveMode[def.id] || 'gb';
+                            if (mode === 'gb_mb') return `${(v * 1024).toFixed(1)} MB`;
                             return `${v.toFixed(1)} GB`;
                         }
                         return `${v.toFixed(1)} ${def.unit || ''}`;
@@ -395,16 +398,26 @@ function updatePanels(metrics) {
             if (!isNaN(num)) {
                 let displayVal = num;
                 let displayUnit = m.unit || '';
-                // 自适应单位：< 2 MB/s 显示 KB/s
+                // 自适应单位 + 滞回区间
                 if (def.adaptive_unit && m.unit === 'MB/s') {
-                    if (num < 2) {
+                    const T_LOW = 1.5, T_HIGH = 2.5;
+                    let mode = state.adaptiveMode[m.id] || 'mb';
+                    if (mode === 'kb' && num >= T_HIGH) mode = 'mb';
+                    else if (mode === 'mb' && num < T_LOW) mode = 'kb';
+                    state.adaptiveMode[m.id] = mode;
+                    if (mode === 'kb') {
                         displayVal = num * 1024;
                         displayUnit = 'KB/s';
                     }
                 }
-                // 自适应单位：< 2 GB 显示 MB
+                // 自适应单位 + 滞回区间 (GB)
                 if (def.adaptive_unit && m.unit === 'GB') {
-                    if (num < 2) {
+                    const T_LOW = 1.5, T_HIGH = 2.5;
+                    let mode = state.adaptiveMode[m.id] || 'gb_mb';
+                    if (mode === 'gb_mb' && num >= T_HIGH) mode = 'gb';
+                    else if (mode === 'gb' && num < T_LOW) mode = 'gb_mb';
+                    state.adaptiveMode[m.id] = mode;
+                    if (mode === 'gb_mb') {
                         displayVal = num * 1024;
                         displayUnit = 'MB';
                     }
