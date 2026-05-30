@@ -287,7 +287,17 @@ function initChart(def, chartEl) {
                 theme: 'dark',
                 x: { format: 'HH:mm:ss' },
                 y: {
-                    formatter: (v) => `${v.toFixed(1)} ${def.unit || ''}`,
+                    formatter: (v) => {
+                        if (def.adaptive_unit && def.unit === 'MB/s') {
+                            if (v < 2) return `${(v * 1024).toFixed(1)} KB/s`;
+                            return `${v.toFixed(1)} MB/s`;
+                        }
+                        if (def.adaptive_unit && def.unit === 'GB') {
+                            if (v < 2) return `${(v * 1024).toFixed(1)} MB`;
+                            return `${v.toFixed(1)} GB`;
+                        }
+                        return `${v.toFixed(1)} ${def.unit || ''}`;
+                    },
                 },
             },
             colors: [color],
